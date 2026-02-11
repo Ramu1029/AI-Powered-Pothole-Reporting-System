@@ -69,17 +69,17 @@ export default function StaffDashboard() {
     resolved: regionReports.filter(r => r.status === 'resolved').length,
   };
 
-  const handleTakeAssignment = (report: HazardReport) => {
-    assignReport(report.id, user.id, user.name);
+  const handleTakeAssignment = async (report: HazardReport) => {
+    await assignReport(report.id, user.id, user.name);
     setSuccessMessage('Report assigned to you successfully');
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  const handleStatusUpdate = (newStatus: ReportStatus) => {
+  const handleStatusUpdate = async (newStatus: ReportStatus) => {
     if (!selectedReport) return;
 
     const remarkText = remark.trim() || `Status updated to ${newStatus}`;
-    updateReportStatus(selectedReport.id, newStatus, remarkText);
+    await updateReportStatus(selectedReport.id, newStatus, remarkText);
 
     setSelectedReport(null);
     setRemark('');
