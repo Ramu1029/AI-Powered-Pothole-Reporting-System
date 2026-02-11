@@ -99,8 +99,8 @@ export default function AdminDashboard() {
     reports: count,
   }));
 
-  const handleApproveStaff = (userId: string) => {
-    approveStaff(userId);
+  const handleApproveStaff = async (userId: string) => {
+    await approveStaff(userId);
     setSuccessMessage('Staff member approved successfully');
     setTimeout(() => setSuccessMessage(''), 3000);
   };

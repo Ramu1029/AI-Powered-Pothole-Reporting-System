@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { mockRegions } from '@/data/mockData';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +35,7 @@ const sampleImages = [
 
 export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
   const { user } = useAuth();
-  const { addReport } = useData();
+  const { addReport, regions } = useData();
 
   const [step, setStep] = useState<'form' | 'analyzing' | 'result'>('form');
   const [formData, setFormData] = useState({
@@ -81,7 +80,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     // Simulate AI analysis delay
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const report = addReport({
+    const report = await addReport({
       reportedBy: user.id,
       reporterName: user.name,
       title: formData.title,
@@ -95,9 +94,11 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
       },
     });
 
-    setCreatedReport(report);
-    setStep('result');
-    setSuccess(true);
+    if (report) {
+      setCreatedReport(report);
+      setStep('result');
+      setSuccess(true);
+    }
   };
 
   const handleClose = () => {
@@ -207,7 +208,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                   <SelectValue placeholder="Select region" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockRegions.map(region => (
+                  {regions.map(region => (
                     <SelectItem key={region.id} value={region.name}>
                       {region.name}
                     </SelectItem>
