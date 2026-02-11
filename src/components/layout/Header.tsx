@@ -23,8 +23,8 @@ export function Header() {
 
   const RoleIcon = roleIcons[user.role];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
