@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      hazard_reports: {
+        Row: {
+          ai_confidence: number | null
+          ai_description: string | null
+          ai_hazard_type: Database["public"]["Enums"]["hazard_type"] | null
+          ai_severity: Database["public"]["Enums"]["severity_level"] | null
+          ai_suggested_priority: number | null
+          assigned_staff_name: string | null
+          assigned_to: string | null
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          location_address: string
+          location_lat: number
+          location_lng: number
+          location_region: string
+          remarks: string[] | null
+          reported_by: string
+          reporter_name: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          title: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_description?: string | null
+          ai_hazard_type?: Database["public"]["Enums"]["hazard_type"] | null
+          ai_severity?: Database["public"]["Enums"]["severity_level"] | null
+          ai_suggested_priority?: number | null
+          assigned_staff_name?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          location_address: string
+          location_lat: number
+          location_lng: number
+          location_region: string
+          remarks?: string[] | null
+          reported_by: string
+          reporter_name: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          title: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_description?: string | null
+          ai_hazard_type?: Database["public"]["Enums"]["hazard_type"] | null
+          ai_severity?: Database["public"]["Enums"]["severity_level"] | null
+          ai_suggested_priority?: number | null
+          assigned_staff_name?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          location_address?: string
+          location_lat?: number
+          location_lng?: number
+          location_region?: string
+          remarks?: string[] | null
+          reported_by?: string
+          reporter_name?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          title?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -41,6 +119,30 @@ export type Database = {
           region?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      regions: {
+        Row: {
+          active_reports: number | null
+          code: string
+          id: string
+          name: string
+          staff_count: number | null
+        }
+        Insert: {
+          active_reports?: number | null
+          code: string
+          id?: string
+          name: string
+          staff_count?: number | null
+        }
+        Update: {
+          active_reports?: number | null
+          code?: string
+          id?: string
+          name?: string
+          staff_count?: number | null
         }
         Relationships: []
       }
@@ -85,6 +187,23 @@ export type Database = {
     }
     Enums: {
       app_role: "citizen" | "municipal_staff" | "admin"
+      hazard_type:
+        | "pothole"
+        | "crack"
+        | "flooding"
+        | "debris"
+        | "damaged_signage"
+        | "broken_barrier"
+        | "uneven_surface"
+        | "erosion"
+      report_status:
+        | "pending"
+        | "under_review"
+        | "verified"
+        | "rejected"
+        | "in_progress"
+        | "resolved"
+      severity_level: "low" | "medium" | "high" | "critical"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -213,6 +332,25 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["citizen", "municipal_staff", "admin"],
+      hazard_type: [
+        "pothole",
+        "crack",
+        "flooding",
+        "debris",
+        "damaged_signage",
+        "broken_barrier",
+        "uneven_surface",
+        "erosion",
+      ],
+      report_status: [
+        "pending",
+        "under_review",
+        "verified",
+        "rejected",
+        "in_progress",
+        "resolved",
+      ],
+      severity_level: ["low", "medium", "high", "critical"],
     },
   },
 } as const
