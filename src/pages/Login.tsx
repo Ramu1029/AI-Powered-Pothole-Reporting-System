@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormMessage } from '@/components/common/FormMessage';
-import { loginCredentials } from '@/data/mockData';
-import { Shield, User, Wrench, KeyRound } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,15 +19,8 @@ export default function Login() {
     e.preventDefault();
     setError('');
 
-    if (!email.trim()) {
-      setError('Email address is required');
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('Password is required');
-      return;
-    }
+    if (!email.trim()) { setError('Email address is required'); return; }
+    if (!password.trim()) { setError('Password is required'); return; }
 
     setIsLoading(true);
     const result = await login(email, password);
@@ -39,12 +31,6 @@ export default function Login() {
     } else {
       setError(result.error || 'Login failed');
     }
-  };
-
-  const handleQuickLogin = (role: keyof typeof loginCredentials) => {
-    const creds = loginCredentials[role];
-    setEmail(creds.email);
-    setPassword(creds.password);
   };
 
   return (
@@ -59,7 +45,6 @@ export default function Login() {
             <span className="text-xl font-semibold text-primary-foreground">RoadWatch</span>
           </div>
         </div>
-
         <div className="space-y-6">
           <h1 className="text-4xl font-semibold text-primary-foreground leading-tight">
             Citizen-Centric Road<br />Hazard Reporting
@@ -68,7 +53,6 @@ export default function Login() {
             A comprehensive platform for reporting, tracking, and resolving road infrastructure issues efficiently.
           </p>
         </div>
-
         <div className="text-primary-foreground/50 text-sm">
           © 2024 RoadWatch. Municipal Infrastructure Division.
         </div>
@@ -96,26 +80,17 @@ export default function Login() {
 
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="h-11"
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-11" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="h-11"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">
+                  Forgot password?
+                </Link>
+              </div>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="h-11" />
             </div>
 
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
@@ -123,57 +98,10 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-4 text-center">
-              Demo credentials — click to autofill
-            </p>
-            <div className="grid gap-3">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('citizen')}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-left"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Citizen</p>
-                  <p className="text-xs text-muted-foreground">{loginCredentials.citizen.email}</p>
-                </div>
-                <KeyRound className="h-4 w-4 text-muted-foreground ml-auto" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('municipal_staff')}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-left"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Municipal Staff</p>
-                  <p className="text-xs text-muted-foreground">{loginCredentials.municipal_staff.email}</p>
-                </div>
-                <KeyRound className="h-4 w-4 text-muted-foreground ml-auto" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin')}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-left"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Administrator</p>
-                  <p className="text-xs text-muted-foreground">{loginCredentials.admin.email}</p>
-                </div>
-                <KeyRound className="h-4 w-4 text-muted-foreground ml-auto" />
-              </button>
-            </div>
-          </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-primary hover:underline font-medium">Create one</Link>
+          </p>
         </div>
       </div>
     </div>

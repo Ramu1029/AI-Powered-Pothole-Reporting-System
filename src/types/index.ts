@@ -23,7 +23,7 @@ export type ReportStatus =
 export interface User {
   id: string;
   email: string;
-  password: string;
+  password?: string;
   name: string;
   role: UserRole;
   region?: string;
