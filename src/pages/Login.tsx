@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,15 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated and profile loaded
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,13 +31,12 @@ export default function Login() {
 
     setIsLoading(true);
     const result = await login(email, password);
-    setIsLoading(false);
 
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
+    if (!result.success) {
+      setIsLoading(false);
       setError(result.error || 'Login failed');
     }
+    // On success, keep loading state - useEffect will handle navigation when user profile loads
   };
 
   return (

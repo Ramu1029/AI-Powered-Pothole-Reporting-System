@@ -19,11 +19,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function fetchUserProfile(userId: string): Promise<User | null> {
   const [profileRes, roleRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('user_id', userId).single(),
-    supabase.from('user_roles').select('*').eq('user_id', userId).single(),
+    supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_roles').select('*').eq('user_id', userId).maybeSingle(),
   ]);
 
-  if (profileRes.error || !profileRes.data) return null;
+  if (profileRes.error || !profileRes.data) {
+    console.error('Profile fetch error:', profileRes.error);
+    return null;
+  }
 
   const profile = profileRes.data;
   const roleData = roleRes.data;
@@ -45,18 +48,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('Auth state change:', event, !!newSession);
       setSession(newSession);
       if (newSession?.user) {
-        const profile = await fetchUserProfile(newSession.user.id);
-        setUser(profile);
+        // Use setTimeout to avoid Supabase client deadlock
+        setTimeout(async () => {
+          const profile = await fetchUserProfile(newSession.user.id);
+          console.log('Profile fetched:', !!profile, profile?.role);
+          setUser(profile);
+          setIsLoading(false);
+        }, 0);
       } else {
         setUser(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      if (initialSessionHandled) return;
+      initialSessionHandled = true;
       setSession(currentSession);
       if (currentSession?.user) {
         const profile = await fetchUserProfile(currentSession.user.id);
