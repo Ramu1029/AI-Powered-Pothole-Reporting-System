@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import {
@@ -19,19 +19,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormMessage } from '@/components/common/FormMessage';
-import { Upload, MapPin, Brain, Loader2 } from 'lucide-react';
+import { Upload, MapPin, Brain, Loader2, Camera, X } from 'lucide-react';
 import { SeverityBadge } from '@/components/common/StatusBadge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReportHazardModalProps {
   open: boolean;
   onClose: () => void;
 }
-
-const sampleImages = [
-  'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format',
-  'https://images.unsplash.com/photo-1605106702734-205df224ecce?w=800&auto=format',
-  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format',
-];
 
 export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
   const { user } = useAuth();
@@ -43,49 +38,83 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     description: '',
     address: '',
     region: user?.region || '',
-    imageUrl: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const [createdReport, setCreatedReport] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-    if (!formData.address.trim()) {
-      newErrors.address = 'Location address is required';
-    }
-    if (!formData.region) {
-      newErrors.region = 'Region is required';
-    }
-    if (!formData.imageUrl) {
-      newErrors.imageUrl = 'Please select or upload an image';
-    }
-
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.address.trim()) newErrors.address = 'Location address is required';
+    if (!formData.region) newErrors.region = 'Region is required';
+    if (!imageFile) newErrors.image = 'Please upload a hazard photo';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrors(prev => ({ ...prev, image: 'Please select an image file' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, image: 'Image must be under 5MB' }));
+      return;
+    }
+
+    setImageFile(file);
+    setErrors(prev => { const { image, ...rest } = prev; return rest; });
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile || !user) return null;
+    const ext = imageFile.name.split('.').pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('hazard-images').upload(path, imageFile);
+    if (error) return null;
+    const { data } = supabase.storage.from('hazard-images').getPublicUrl(path);
+    return data.publicUrl;
   };
 
   const handleSubmit = async () => {
     if (!validateForm() || !user) return;
 
     setStep('analyzing');
+    setUploading(true);
 
-    // Simulate AI analysis delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const imageUrl = await uploadImage();
+    setUploading(false);
+
+    if (!imageUrl) {
+      setStep('form');
+      setErrors(prev => ({ ...prev, image: 'Failed to upload image. Please try again.' }));
+      return;
+    }
 
     const report = await addReport({
       reportedBy: user.id,
       reporterName: user.name,
       title: formData.title,
       description: formData.description,
-      imageUrl: formData.imageUrl,
+      imageUrl,
       location: {
         lat: 40.7128 + (Math.random() - 0.5) * 0.1,
         lng: -74.006 + (Math.random() - 0.5) * 0.1,
@@ -103,13 +132,9 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
   const handleClose = () => {
     setStep('form');
-    setFormData({
-      title: '',
-      description: '',
-      address: '',
-      region: user?.region || '',
-      imageUrl: '',
-    });
+    setFormData({ title: '', description: '', address: '', region: user?.region || '' });
+    setImageFile(null);
+    setImagePreview(null);
     setErrors({});
     setSuccess(false);
     setCreatedReport(null);
@@ -117,14 +142,9 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
   };
 
   const hazardTypeLabels: Record<string, string> = {
-    pothole: 'Pothole',
-    crack: 'Road Crack',
-    flooding: 'Flooding',
-    debris: 'Debris',
-    damaged_signage: 'Damaged Signage',
-    broken_barrier: 'Broken Barrier',
-    uneven_surface: 'Uneven Surface',
-    erosion: 'Erosion',
+    pothole: 'Pothole', crack: 'Road Crack', flooding: 'Flooding', debris: 'Debris',
+    damaged_signage: 'Damaged Signage', broken_barrier: 'Broken Barrier',
+    uneven_surface: 'Uneven Surface', erosion: 'Erosion',
   };
 
   return (
@@ -133,7 +153,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
         <DialogHeader>
           <DialogTitle>
             {step === 'form' && 'Report Road Hazard'}
-            {step === 'analyzing' && 'Analyzing Image'}
+            {step === 'analyzing' && 'Uploading & Analyzing'}
             {step === 'result' && 'Report Submitted'}
           </DialogTitle>
         </DialogHeader>
@@ -164,23 +184,37 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Hazard Image *</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {sampleImages.map((url, index) => (
+              <Label>Hazard Photo *</Label>
+              {imagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-border">
+                  <img src={imagePreview} alt="Preview" className="w-full aspect-video object-cover" />
                   <button
-                    key={index}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, imageUrl: url }))}
-                    className={`aspect-video rounded-lg overflow-hidden border-2 transition-colors ${
-                      formData.imageUrl === url ? 'border-accent' : 'border-transparent hover:border-border'
-                    }`}
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-background transition-colors"
                   >
-                    <img src={url} alt={`Sample ${index + 1}`} className="w-full h-full object-cover" />
+                    <X className="h-4 w-4 text-foreground" />
                   </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">Select a sample image for demo purposes</p>
-              {errors.imageUrl && <p className="text-xs text-destructive">{errors.imageUrl}</p>}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full aspect-video rounded-lg border-2 border-dashed border-border hover:border-accent flex flex-col items-center justify-center gap-2 transition-colors bg-muted/30"
+                >
+                  <Camera className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Click to upload a photo</span>
+                  <span className="text-xs text-muted-foreground">JPG, PNG up to 5MB</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              {errors.image && <p className="text-xs text-destructive">{errors.image}</p>}
             </div>
 
             <div className="space-y-2">
@@ -209,9 +243,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {regions.map(region => (
-                    <SelectItem key={region.id} value={region.name}>
-                      {region.name}
-                    </SelectItem>
+                    <SelectItem key={region.id} value={region.name}>{region.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -219,9 +251,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={handleClose} className="flex-1">
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={handleClose} className="flex-1">Cancel</Button>
               <Button variant="accent" onClick={handleSubmit} className="flex-1">
                 <Upload className="h-4 w-4" />
                 Submit Report
@@ -238,9 +268,11 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                 <Loader2 className="h-8 w-8 text-accent absolute -right-2 -bottom-2 animate-spin" />
               </div>
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">Analyzing Image</h3>
+            <h3 className="text-lg font-medium text-foreground mb-2">
+              {uploading ? 'Uploading Image...' : 'Analyzing Image'}
+            </h3>
             <p className="text-muted-foreground">
-              Our AI is identifying the hazard type and severity...
+              {uploading ? 'Uploading your hazard photo...' : 'Our AI is identifying the hazard type and severity...'}
             </p>
           </div>
         )}
@@ -251,11 +283,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
             <div className="rounded-lg border border-border overflow-hidden">
               <div className="aspect-video">
-                <img
-                  src={createdReport.imageUrl}
-                  alt={createdReport.title}
-                  className="w-full h-full object-cover"
-                />
+                <img src={createdReport.imageUrl} alt={createdReport.title} className="w-full h-full object-cover" />
               </div>
             </div>
 
@@ -264,13 +292,10 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                 <Brain className="h-4 w-4 text-accent" />
                 <span className="text-sm font-medium text-foreground">AI Analysis Results</span>
               </div>
-
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Hazard Type</p>
-                  <p className="font-medium text-foreground">
-                    {hazardTypeLabels[createdReport.aiAnalysis.hazardType]}
-                  </p>
+                  <p className="font-medium text-foreground">{hazardTypeLabels[createdReport.aiAnalysis.hazardType]}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Severity</p>
@@ -278,26 +303,17 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Confidence</p>
-                  <p className="font-medium text-foreground">
-                    {Math.round(createdReport.aiAnalysis.confidence * 100)}%
-                  </p>
+                  <p className="font-medium text-foreground">{Math.round(createdReport.aiAnalysis.confidence * 100)}%</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Priority</p>
-                  <p className="font-medium text-foreground">
-                    Level {createdReport.aiAnalysis.suggestedPriority}
-                  </p>
+                  <p className="font-medium text-foreground">Level {createdReport.aiAnalysis.suggestedPriority}</p>
                 </div>
               </div>
-
-              <p className="text-sm text-muted-foreground border-t border-border pt-3">
-                {createdReport.aiAnalysis.description}
-              </p>
+              <p className="text-sm text-muted-foreground border-t border-border pt-3">{createdReport.aiAnalysis.description}</p>
             </div>
 
-            <Button onClick={handleClose} className="w-full">
-              Done
-            </Button>
+            <Button onClick={handleClose} className="w-full">Done</Button>
           </div>
         )}
       </DialogContent>
