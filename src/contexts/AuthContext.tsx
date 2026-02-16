@@ -37,6 +37,10 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
     name: profile.name,
     role: (roleData?.role as UserRole) || 'citizen',
     region: profile.region || undefined,
+    phone: profile.phone || undefined,
+    city: profile.city || undefined,
+    state: profile.state || undefined,
+    isVerified: profile.is_verified ?? false,
     createdAt: profile.created_at,
     isApproved: roleData?.is_approved ?? false,
   };

@@ -113,6 +113,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           name: p.name,
           role: role?.role || 'citizen',
           region: p.region || undefined,
+          phone: p.phone || undefined,
+          city: p.city || undefined,
+          state: p.state || undefined,
+          isVerified: p.is_verified ?? false,
           createdAt: p.created_at,
           isApproved: role?.is_approved ?? false,
         } as User;
