@@ -27,6 +27,10 @@ export interface User {
   name: string;
   role: UserRole;
   region?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  isVerified: boolean;
   createdAt: string;
   isApproved: boolean;
 }

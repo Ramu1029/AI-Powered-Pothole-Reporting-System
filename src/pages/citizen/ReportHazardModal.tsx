@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormMessage } from '@/components/common/FormMessage';
-import { Upload, MapPin, Brain, Loader2, Camera, X } from 'lucide-react';
+import { Upload, MapPin, Brain, Loader2, Camera, X, LocateFixed } from 'lucide-react';
 import { SeverityBadge } from '@/components/common/StatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,10 +38,13 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     description: '',
     address: '',
     region: user?.region || '',
+    lat: '',
+    lng: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const [createdReport, setCreatedReport] = useState<any>(null);
@@ -84,6 +87,30 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setErrors(prev => ({ ...prev, location: 'Geolocation not supported by your browser' }));
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          lat: position.coords.latitude.toFixed(6),
+          lng: position.coords.longitude.toFixed(6),
+        }));
+        setErrors(prev => { const { location, ...rest } = prev; return rest; });
+        setLocating(false);
+      },
+      (error) => {
+        setErrors(prev => ({ ...prev, location: 'Could not get location. Please allow location access.' }));
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const uploadImage = async (): Promise<string | null> => {
     if (!imageFile || !user) return null;
     const ext = imageFile.name.split('.').pop();
@@ -109,6 +136,9 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
       return;
     }
 
+    const lat = formData.lat ? parseFloat(formData.lat) : 40.7128 + (Math.random() - 0.5) * 0.1;
+    const lng = formData.lng ? parseFloat(formData.lng) : -74.006 + (Math.random() - 0.5) * 0.1;
+
     const report = await addReport({
       reportedBy: user.id,
       reporterName: user.name,
@@ -116,8 +146,8 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
       description: formData.description,
       imageUrl,
       location: {
-        lat: 40.7128 + (Math.random() - 0.5) * 0.1,
-        lng: -74.006 + (Math.random() - 0.5) * 0.1,
+        lat,
+        lng,
         address: formData.address,
         region: formData.region,
       },
@@ -132,7 +162,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
   const handleClose = () => {
     setStep('form');
-    setFormData({ title: '', description: '', address: '', region: user?.region || '' });
+    setFormData({ title: '', description: '', address: '', region: user?.region || '', lat: '', lng: '' });
     setImageFile(null);
     setImagePreview(null);
     setErrors({});
@@ -149,7 +179,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {step === 'form' && 'Report Road Hazard'}
@@ -230,6 +260,44 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                 />
               </div>
               {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
+            </div>
+
+            {/* GPS Location */}
+            <div className="space-y-2">
+              <Label>GPS Coordinates</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGetLocation}
+                  disabled={locating}
+                  className="shrink-0"
+                >
+                  {locating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LocateFixed className="h-4 w-4" />
+                  )}
+                  {locating ? 'Getting...' : 'Use My Location'}
+                </Button>
+                <Input
+                  value={formData.lat}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lat: e.target.value }))}
+                  placeholder="Latitude"
+                  className="flex-1"
+                />
+                <Input
+                  value={formData.lng}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lng: e.target.value }))}
+                  placeholder="Longitude"
+                  className="flex-1"
+                />
+              </div>
+              {formData.lat && formData.lng && (
+                <p className="text-xs text-success">📍 Location captured: {formData.lat}, {formData.lng}</p>
+              )}
+              {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
             </div>
 
             <div className="space-y-2">

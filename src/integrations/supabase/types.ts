@@ -31,6 +31,7 @@ export type Database = {
           location_lat: number
           location_lng: number
           location_region: string
+          proof_image_url: string | null
           remarks: string[] | null
           reported_by: string
           reporter_name: string
@@ -56,6 +57,7 @@ export type Database = {
           location_lat: number
           location_lng: number
           location_region: string
+          proof_image_url?: string | null
           remarks?: string[] | null
           reported_by: string
           reporter_name: string
@@ -81,6 +83,7 @@ export type Database = {
           location_lat?: number
           location_lng?: number
           location_region?: string
+          proof_image_url?: string | null
           remarks?: string[] | null
           reported_by?: string
           reporter_name?: string
@@ -94,29 +97,41 @@ export type Database = {
       }
       profiles: {
         Row: {
+          city: string | null
           created_at: string
           email: string
           id: string
+          is_verified: boolean
           name: string
+          phone: string | null
           region: string | null
+          state: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          city?: string | null
           created_at?: string
           email: string
           id?: string
+          is_verified?: boolean
           name: string
+          phone?: string | null
           region?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          city?: string | null
           created_at?: string
           email?: string
           id?: string
+          is_verified?: boolean
           name?: string
+          phone?: string | null
           region?: string | null
+          state?: string | null
           updated_at?: string
           user_id?: string
         }

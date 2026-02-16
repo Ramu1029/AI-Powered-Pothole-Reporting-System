@@ -11,6 +11,7 @@ export const mockUsers: User[] = [
     role: 'citizen',
     region: 'Downtown District',
     createdAt: '2024-01-15T08:30:00Z',
+    isVerified: true,
     isApproved: true,
   },
   {
@@ -21,6 +22,7 @@ export const mockUsers: User[] = [
     role: 'citizen',
     region: 'Westside',
     createdAt: '2024-02-20T14:15:00Z',
+    isVerified: true,
     isApproved: true,
   },
   {
@@ -31,6 +33,7 @@ export const mockUsers: User[] = [
     role: 'citizen',
     region: 'Industrial Zone',
     createdAt: '2024-03-10T09:45:00Z',
+    isVerified: true,
     isApproved: true,
   },
   // Municipal Staff
@@ -42,6 +45,7 @@ export const mockUsers: User[] = [
     role: 'municipal_staff',
     region: 'Downtown District',
     createdAt: '2023-06-01T08:00:00Z',
+    isVerified: true,
     isApproved: true,
   },
   {
@@ -52,6 +56,7 @@ export const mockUsers: User[] = [
     role: 'municipal_staff',
     region: 'Westside',
     createdAt: '2023-08-15T08:00:00Z',
+    isVerified: true,
     isApproved: true,
   },
   {
@@ -62,6 +67,7 @@ export const mockUsers: User[] = [
     role: 'municipal_staff',
     region: 'Industrial Zone',
     createdAt: '2024-01-05T08:00:00Z',
+    isVerified: false,
     isApproved: false,
   },
   // Administrators
@@ -72,6 +78,7 @@ export const mockUsers: User[] = [
     name: 'Robert Anderson',
     role: 'admin',
     createdAt: '2022-01-01T08:00:00Z',
+    isVerified: true,
     isApproved: true,
   },
   {
@@ -81,6 +88,7 @@ export const mockUsers: User[] = [
     name: 'Amanda Foster',
     role: 'admin',
     createdAt: '2022-06-15T08:00:00Z',
+    isVerified: true,
     isApproved: true,
   },
 ];
