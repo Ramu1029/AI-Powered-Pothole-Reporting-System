@@ -30,6 +30,8 @@ export interface User {
   phone?: string;
   city?: string;
   state?: string;
+  district?: string;
+  mandal?: string;
   isVerified: boolean;
   createdAt: string;
   isApproved: boolean;
@@ -40,6 +42,9 @@ export interface Location {
   lng: number;
   address: string;
   region: string;
+  state: string;
+  district: string;
+  mandal: string;
 }
 
 export interface AIAnalysis {

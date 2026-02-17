@@ -11,14 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { FormMessage } from '@/components/common/FormMessage';
+import { LocationCascade } from '@/components/common/LocationCascade';
 import { Upload, MapPin, Brain, Loader2, Camera, X, LocateFixed } from 'lucide-react';
 import { SeverityBadge } from '@/components/common/StatusBadge';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,14 +24,18 @@ interface ReportHazardModalProps {
 
 export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
   const { user } = useAuth();
-  const { addReport, regions } = useData();
+  const { addReport } = useData();
 
   const [step, setStep] = useState<'form' | 'analyzing' | 'result'>('form');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     address: '',
-    region: user?.region || '',
+    state: '',
+    district: '',
+    mandal: '',
+    stateId: null as number | null,
+    districtId: null as number | null,
     lat: '',
     lng: '',
   });
@@ -55,7 +53,9 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.address.trim()) newErrors.address = 'Location address is required';
-    if (!formData.region) newErrors.region = 'Region is required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.district) newErrors.district = 'District is required';
+    if (!formData.mandal) newErrors.mandal = 'Mandal is required';
     if (!imageFile) newErrors.image = 'Please upload a hazard photo';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -64,7 +64,6 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       setErrors(prev => ({ ...prev, image: 'Please select an image file' }));
       return;
@@ -73,7 +72,6 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
       setErrors(prev => ({ ...prev, image: 'Image must be under 5MB' }));
       return;
     }
-
     setImageFile(file);
     setErrors(prev => { const { image, ...rest } = prev; return rest; });
     const reader = new FileReader();
@@ -103,7 +101,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
         setErrors(prev => { const { location, ...rest } = prev; return rest; });
         setLocating(false);
       },
-      (error) => {
+      () => {
         setErrors(prev => ({ ...prev, location: 'Could not get location. Please allow location access.' }));
         setLocating(false);
       },
@@ -123,7 +121,6 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
   const handleSubmit = async () => {
     if (!validateForm() || !user) return;
-
     setStep('analyzing');
     setUploading(true);
 
@@ -136,8 +133,8 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
       return;
     }
 
-    const lat = formData.lat ? parseFloat(formData.lat) : 40.7128 + (Math.random() - 0.5) * 0.1;
-    const lng = formData.lng ? parseFloat(formData.lng) : -74.006 + (Math.random() - 0.5) * 0.1;
+    const lat = formData.lat ? parseFloat(formData.lat) : 20.5937 + (Math.random() - 0.5) * 0.1;
+    const lng = formData.lng ? parseFloat(formData.lng) : 78.9629 + (Math.random() - 0.5) * 0.1;
 
     const report = await addReport({
       reportedBy: user.id,
@@ -149,7 +146,10 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
         lat,
         lng,
         address: formData.address,
-        region: formData.region,
+        region: `${formData.mandal}, ${formData.district}`,
+        state: formData.state,
+        district: formData.district,
+        mandal: formData.mandal,
       },
     });
 
@@ -162,7 +162,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
   const handleClose = () => {
     setStep('form');
-    setFormData({ title: '', description: '', address: '', region: user?.region || '', lat: '', lng: '' });
+    setFormData({ title: '', description: '', address: '', state: '', district: '', mandal: '', stateId: null, districtId: null, lat: '', lng: '' });
     setImageFile(null);
     setImagePreview(null);
     setErrors({});
@@ -274,11 +274,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
                   disabled={locating}
                   className="shrink-0"
                 >
-                  {locating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <LocateFixed className="h-4 w-4" />
-                  )}
+                  {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
                   {locating ? 'Getting...' : 'Use My Location'}
                 </Button>
                 <Input
@@ -300,23 +296,18 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
               {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label>Region *</Label>
-              <Select
-                value={formData.region}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, region: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select region" />
-                </SelectTrigger>
-                <SelectContent>
-                  {regions.map(region => (
-                    <SelectItem key={region.id} value={region.name}>{region.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.region && <p className="text-xs text-destructive">{errors.region}</p>}
-            </div>
+            {/* State / District / Mandal */}
+            <LocationCascade
+              state={formData.state}
+              district={formData.district}
+              mandal={formData.mandal}
+              stateId={formData.stateId}
+              districtId={formData.districtId}
+              onStateChange={(name, id) => setFormData(prev => ({ ...prev, state: name, stateId: id, district: '', districtId: null, mandal: '' }))}
+              onDistrictChange={(name, id) => setFormData(prev => ({ ...prev, district: name, districtId: id, mandal: '' }))}
+              onMandalChange={(name) => setFormData(prev => ({ ...prev, mandal: name }))}
+              errors={errors}
+            />
 
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={handleClose} className="flex-1">Cancel</Button>
@@ -348,13 +339,11 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
         {step === 'result' && createdReport && (
           <div className="space-y-6">
             <FormMessage type="success" message="Your hazard report has been submitted successfully!" />
-
             <div className="rounded-lg border border-border overflow-hidden">
               <div className="aspect-video">
                 <img src={createdReport.imageUrl} alt={createdReport.title} className="w-full h-full object-cover" />
               </div>
             </div>
-
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Brain className="h-4 w-4 text-accent" />
@@ -380,7 +369,6 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
               </div>
               <p className="text-sm text-muted-foreground border-t border-border pt-3">{createdReport.aiAnalysis.description}</p>
             </div>
-
             <Button onClick={handleClose} className="w-full">Done</Button>
           </div>
         )}
