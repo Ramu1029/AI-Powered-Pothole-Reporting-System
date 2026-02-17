@@ -28,9 +28,12 @@ export type Database = {
           id: string
           image_url: string | null
           location_address: string
+          location_district: string
           location_lat: number
           location_lng: number
+          location_mandal: string
           location_region: string
+          location_state: string
           proof_image_url: string | null
           remarks: string[] | null
           reported_by: string
@@ -54,9 +57,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           location_address: string
+          location_district?: string
           location_lat: number
           location_lng: number
+          location_mandal?: string
           location_region: string
+          location_state?: string
           proof_image_url?: string | null
           remarks?: string[] | null
           reported_by: string
@@ -80,9 +86,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           location_address?: string
+          location_district?: string
           location_lat?: number
           location_lng?: number
+          location_mandal?: string
           location_region?: string
+          location_state?: string
           proof_image_url?: string | null
           remarks?: string[] | null
           reported_by?: string
@@ -99,9 +108,11 @@ export type Database = {
         Row: {
           city: string | null
           created_at: string
+          district: string | null
           email: string
           id: string
           is_verified: boolean
+          mandal: string | null
           name: string
           phone: string | null
           region: string | null
@@ -112,9 +123,11 @@ export type Database = {
         Insert: {
           city?: string | null
           created_at?: string
+          district?: string | null
           email: string
           id?: string
           is_verified?: boolean
+          mandal?: string | null
           name: string
           phone?: string | null
           region?: string | null
@@ -125,9 +138,11 @@ export type Database = {
         Update: {
           city?: string | null
           created_at?: string
+          district?: string | null
           email?: string
           id?: string
           is_verified?: boolean
+          mandal?: string | null
           name?: string
           phone?: string | null
           region?: string | null

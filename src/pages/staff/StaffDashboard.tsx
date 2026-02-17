@@ -64,7 +64,7 @@ export default function StaffDashboard() {
   if (!user) return null;
 
   const regionReports = reports.filter(
-    r => r.location.region === user.region || r.assignedTo === user.id
+    r => (r.location.state === user.state && r.location.district === user.district) || r.assignedTo === user.id
   );
 
   const filteredReports = statusFilter === 'all'
@@ -149,7 +149,7 @@ export default function StaffDashboard() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Manage hazard reports in {user.region}
+            Manage hazard reports in {user.district ? `${user.district}, ${user.state}` : user.region}
           </p>
         </div>
 

@@ -7,6 +7,14 @@ import { StatusBadge, SeverityBadge } from '@/components/common/StatusBadge';
 import { FormMessage } from '@/components/common/FormMessage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useIndiaLocations } from '@/hooks/useIndiaLocations';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -28,8 +36,9 @@ import {
   Clock,
   AlertTriangle,
   UserCheck,
+  Filter,
 } from 'lucide-react';
-import { HazardType, Severity } from '@/types';
+import { HazardType } from '@/types';
 
 const COLORS = ['hsl(185, 35%, 35%)', 'hsl(220, 25%, 35%)', 'hsl(160, 40%, 35%)', 'hsl(40, 50%, 45%)', 'hsl(0, 45%, 45%)'];
 
@@ -46,26 +55,38 @@ const hazardTypeLabels: Record<HazardType, string> = {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { reports, users, regions, getPendingStaff, approveStaff } = useData();
+  const { reports, users, getPendingStaff, approveStaff } = useData();
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Location filters
+  const [filterState, setFilterState] = useState('all');
+  const [filterDistrict, setFilterDistrict] = useState('all');
+  const [filterMandal, setFilterMandal] = useState('all');
+  const { states, districts, mandals, fetchDistricts, fetchMandals } = useIndiaLocations();
 
   if (!user) return null;
 
   const pendingStaff = getPendingStaff();
 
-  // Calculate stats
+  // Filter reports by location
+  const filteredReports = reports.filter(r => {
+    if (filterState !== 'all' && r.location.state !== filterState) return false;
+    if (filterDistrict !== 'all' && r.location.district !== filterDistrict) return false;
+    if (filterMandal !== 'all' && r.location.mandal !== filterMandal) return false;
+    return true;
+  });
+
   const stats = {
-    totalReports: reports.length,
-    pendingReports: reports.filter(r => r.status === 'pending').length,
-    resolvedReports: reports.filter(r => r.status === 'resolved').length,
+    totalReports: filteredReports.length,
+    pendingReports: filteredReports.filter(r => r.status === 'pending').length,
+    resolvedReports: filteredReports.filter(r => r.status === 'resolved').length,
     totalStaff: users.filter(u => u.role === 'municipal_staff').length,
     totalCitizens: users.filter(u => u.role === 'citizen').length,
-    criticalReports: reports.filter(r => r.aiAnalysis.severity === 'critical').length,
+    criticalReports: filteredReports.filter(r => r.aiAnalysis.severity === 'critical').length,
   };
 
-  // Reports by type for chart
   const reportsByType = Object.entries(
-    reports.reduce((acc, report) => {
+    filteredReports.reduce((acc, report) => {
       const type = report.aiAnalysis.hazardType;
       acc[type] = (acc[type] || 0) + 1;
       return acc;
@@ -75,9 +96,8 @@ export default function AdminDashboard() {
     value: count,
   }));
 
-  // Reports by severity for pie chart
   const reportsBySeverity = Object.entries(
-    reports.reduce((acc, report) => {
+    filteredReports.reduce((acc, report) => {
       const severity = report.aiAnalysis.severity;
       acc[severity] = (acc[severity] || 0) + 1;
       return acc;
@@ -87,15 +107,15 @@ export default function AdminDashboard() {
     value: count,
   }));
 
-  // Reports by region
-  const reportsByRegion = Object.entries(
-    reports.reduce((acc, report) => {
-      const region = report.location.region;
-      acc[region] = (acc[region] || 0) + 1;
+  // Reports grouped by district
+  const reportsByDistrict = Object.entries(
+    filteredReports.reduce((acc, report) => {
+      const district = report.location.district || 'Unknown';
+      acc[district] = (acc[district] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
-  ).map(([region, count]) => ({
-    name: region,
+  ).map(([district, count]) => ({
+    name: district,
     reports: count,
   }));
 
@@ -105,22 +125,81 @@ export default function AdminDashboard() {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
+  const handleStateFilter = (value: string) => {
+    setFilterState(value);
+    setFilterDistrict('all');
+    setFilterMandal('all');
+    if (value !== 'all') {
+      const selected = states.find(s => s.name === value);
+      if (selected) fetchDistricts(selected.id);
+    }
+  };
+
+  const handleDistrictFilter = (value: string) => {
+    setFilterDistrict(value);
+    setFilterMandal('all');
+    if (value !== 'all') {
+      const selected = districts.find(d => d.name === value);
+      if (selected) fetchMandals(selected.id);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Administrator Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            System overview and management
-          </p>
+          <p className="text-muted-foreground mt-1">System overview and management</p>
         </div>
 
-        {successMessage && (
-          <FormMessage type="success" message={successMessage} />
-        )}
+        {successMessage && <FormMessage type="success" message={successMessage} />}
+
+        {/* Location Filters */}
+        <div className="bg-card rounded-lg border border-border p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Filter by Location</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Select value={filterState} onValueChange={handleStateFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All States" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="all">All States</SelectItem>
+                {states.map(s => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterDistrict} onValueChange={handleDistrictFilter} disabled={filterState === 'all'}>
+              <SelectTrigger>
+                <SelectValue placeholder={filterState === 'all' ? 'Select state first' : 'All Districts'} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="all">All Districts</SelectItem>
+                {districts.map(d => (
+                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterMandal} onValueChange={setFilterMandal} disabled={filterDistrict === 'all'}>
+              <SelectTrigger>
+                <SelectValue placeholder={filterDistrict === 'all' ? 'Select district first' : 'All Mandals'} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="all">All Mandals</SelectItem>
+                {mandals.map(m => (
+                  <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -135,7 +214,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10">
@@ -147,7 +225,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
@@ -159,7 +236,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
@@ -171,7 +247,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
@@ -183,7 +258,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
@@ -213,15 +287,14 @@ export default function AdminDashboard() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="regions">
-              <MapPin className="h-4 w-4 mr-2" />
-              Regions
+            <TabsTrigger value="reports">
+              <FileText className="h-4 w-4 mr-2" />
+              All Reports
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Reports by Type */}
               <div className="bg-card rounded-lg border border-border p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by Hazard Type</h3>
                 <div className="h-[300px]">
@@ -230,67 +303,39 @@ export default function AdminDashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                       <YAxis dataKey="name" type="category" width={100} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '6px',
-                        }}
-                      />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '6px' }} />
                       <Bar dataKey="value" fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Reports by Severity */}
               <div className="bg-card rounded-lg border border-border p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by Severity</h3>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={reportsBySeverity}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
+                      <Pie data={reportsBySeverity} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
                         {reportsBySeverity.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '6px',
-                        }}
-                      />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '6px' }} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Reports by Region */}
               <div className="bg-card rounded-lg border border-border p-6 lg:col-span-2">
-                <h3 className="text-sm font-medium text-foreground mb-4">Reports by Region</h3>
+                <h3 className="text-sm font-medium text-foreground mb-4">Reports by District</h3>
                 <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportsByRegion}>
+                    <BarChart data={reportsByDistrict}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                       <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '6px',
-                        }}
-                      />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '6px' }} />
                       <Bar dataKey="reports" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -300,7 +345,6 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="staff" className="space-y-6">
-            {/* Pending Approvals */}
             {pendingStaff.length > 0 && (
               <div className="bg-card rounded-lg border border-border p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
@@ -309,14 +353,13 @@ export default function AdminDashboard() {
                 </h3>
                 <div className="space-y-3">
                   {pendingStaff.map(staff => (
-                    <div
-                      key={staff.id}
-                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-                    >
+                    <div key={staff.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                       <div>
                         <p className="font-medium text-foreground">{staff.name}</p>
                         <p className="text-sm text-muted-foreground">{staff.email}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Region: {staff.region}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {staff.state && `${staff.mandal || ''}, ${staff.district || ''}, ${staff.state}`}
+                        </p>
                       </div>
                       <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)}>
                         <CheckCircle className="h-4 w-4" />
@@ -328,14 +371,13 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* All Staff */}
             <div className="bg-card rounded-lg border border-border overflow-hidden">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Region</th>
+                    <th>Location</th>
                     <th>Status</th>
                     <th>Joined</th>
                   </tr>
@@ -345,7 +387,9 @@ export default function AdminDashboard() {
                     <tr key={staff.id}>
                       <td className="font-medium text-foreground">{staff.name}</td>
                       <td className="text-muted-foreground">{staff.email}</td>
-                      <td>{staff.region}</td>
+                      <td className="text-sm">
+                        {staff.state ? `${staff.mandal || ''}, ${staff.district || ''}, ${staff.state}` : '-'}
+                      </td>
                       <td>
                         {staff.isApproved ? (
                           <span className="inline-flex items-center gap-1 text-success text-sm">
@@ -369,39 +413,38 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="regions" className="space-y-6">
+          <TabsContent value="reports" className="space-y-6">
             <div className="bg-card rounded-lg border border-border overflow-hidden">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Region</th>
-                    <th>Code</th>
-                    <th>Staff Count</th>
-                    <th>Active Reports</th>
+                    <th>Title</th>
+                    <th>State</th>
+                    <th>District</th>
+                    <th>Mandal</th>
+                    <th>Severity</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {regions.map(region => {
-                    const regionReports = reports.filter(
-                      r => r.location.region === region.name && r.status !== 'resolved'
-                    ).length;
-                    const regionStaff = users.filter(
-                      u => u.role === 'municipal_staff' && u.region === region.name && u.isApproved
-                    ).length;
-
-                    return (
-                      <tr key={region.id}>
-                        <td className="font-medium text-foreground">{region.name}</td>
-                        <td className="text-muted-foreground">{region.code}</td>
-                        <td>{regionStaff}</td>
-                        <td>
-                          <span className={regionReports > 10 ? 'text-destructive font-medium' : ''}>
-                            {regionReports}
-                          </span>
-                        </td>
+                  {filteredReports.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No reports found for selected filters
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredReports.map(report => (
+                      <tr key={report.id}>
+                        <td className="font-medium text-foreground">{report.title}</td>
+                        <td className="text-sm">{report.location.state || '-'}</td>
+                        <td className="text-sm">{report.location.district || '-'}</td>
+                        <td className="text-sm">{report.location.mandal || '-'}</td>
+                        <td><SeverityBadge severity={report.aiAnalysis.severity} /></td>
+                        <td><StatusBadge status={report.status} /></td>
                       </tr>
-                    );
-                  })}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

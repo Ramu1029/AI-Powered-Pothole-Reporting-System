@@ -19,7 +19,7 @@ export default function CitizenDashboard() {
 
   const userReports = getReportsByUser(user.id);
   const nearbyReports = reports.filter(
-    r => r.location.region === user.region && r.reportedBy !== user.id
+    r => r.location.state === user.state && r.location.district === user.district && r.reportedBy !== user.id
   ).slice(0, 6);
 
   const stats = {
@@ -115,7 +115,7 @@ export default function CitizenDashboard() {
         {/* Nearby Hazards */}
         {nearbyReports.length > 0 && (
           <section>
-            <h2 className="section-title">Nearby Hazards in {user.region}</h2>
+            <h2 className="section-title">Nearby Hazards in {user.district || user.region}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {nearbyReports.map(report => (
                 <HazardCard

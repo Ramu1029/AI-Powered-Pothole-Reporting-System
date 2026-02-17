@@ -62,7 +62,11 @@ export function ReportDetailModal({ report, onClose }: ReportDetailModalProps) {
                 <span>Location</span>
               </div>
               <p className="text-sm text-foreground">{report.location.address}</p>
-              <p className="text-xs text-muted-foreground">{report.location.region}</p>
+              <p className="text-xs text-muted-foreground">
+                {report.location.mandal && `${report.location.mandal}, `}
+                {report.location.district && `${report.location.district}, `}
+                {report.location.state || report.location.region}
+              </p>
             </div>
 
             <div className="space-y-1">
