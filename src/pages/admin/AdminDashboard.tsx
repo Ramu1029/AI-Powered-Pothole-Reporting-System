@@ -131,7 +131,7 @@ export default function AdminDashboard() {
     setFilterMandal('all');
     if (value !== 'all') {
       const selected = states.find(s => s.name === value);
-      if (selected) fetchDistricts(selected.id);
+      if (selected) fetchDistricts(selected.code);
     }
   };
 
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
     setFilterMandal('all');
     if (value !== 'all') {
       const selected = districts.find(d => d.name === value);
-      if (selected) fetchMandals(selected.id);
+      if (selected) fetchMandals(selected.code);
     }
   };
 
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
               <SelectContent className="max-h-60">
                 <SelectItem value="all">All States</SelectItem>
                 {states.map(s => (
-                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                  <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
               <SelectContent className="max-h-60">
                 <SelectItem value="all">All Districts</SelectItem>
                 {districts.map(d => (
-                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
               <SelectContent className="max-h-60">
                 <SelectItem value="all">All Mandals</SelectItem>
                 {mandals.map(m => (
-                  <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                  <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

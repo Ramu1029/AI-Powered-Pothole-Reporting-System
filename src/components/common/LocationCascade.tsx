@@ -1,6 +1,5 @@
 import { useIndiaLocations } from '@/hooks/useIndiaLocations';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -13,10 +12,10 @@ interface LocationCascadeProps {
   state: string;
   district: string;
   mandal: string;
-  stateId: number | null;
-  districtId: number | null;
-  onStateChange: (name: string, id: number) => void;
-  onDistrictChange: (name: string, id: number) => void;
+  stateCode: string | null;
+  districtCode: string | null;
+  onStateChange: (name: string, code: string) => void;
+  onDistrictChange: (name: string, code: string) => void;
   onMandalChange: (name: string) => void;
   errors?: Record<string, string>;
 }
@@ -25,8 +24,8 @@ export function LocationCascade({
   state,
   district,
   mandal,
-  stateId,
-  districtId,
+  stateCode,
+  districtCode,
   onStateChange,
   onDistrictChange,
   onMandalChange,
@@ -46,16 +45,16 @@ export function LocationCascade({
   const handleStateSelect = (value: string) => {
     const selected = states.find(s => s.name === value);
     if (selected) {
-      onStateChange(selected.name, selected.id);
-      fetchDistricts(selected.id);
+      onStateChange(selected.name, selected.code);
+      fetchDistricts(selected.code);
     }
   };
 
   const handleDistrictSelect = (value: string) => {
     const selected = districts.find(d => d.name === value);
     if (selected) {
-      onDistrictChange(selected.name, selected.id);
-      fetchMandals(selected.id);
+      onDistrictChange(selected.name, selected.code);
+      fetchMandals(selected.code);
     }
   };
 
@@ -73,7 +72,7 @@ export function LocationCascade({
           </SelectTrigger>
           <SelectContent className="max-h-60">
             {states.map(s => (
-              <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+              <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -82,16 +81,16 @@ export function LocationCascade({
 
       <div className="space-y-2">
         <Label>District *</Label>
-        <Select value={district} onValueChange={handleDistrictSelect} disabled={!stateId}>
+        <Select value={district} onValueChange={handleDistrictSelect} disabled={!stateCode}>
           <SelectTrigger>
             <SelectValue placeholder={
-              !stateId ? 'Select state first' :
+              !stateCode ? 'Select state first' :
               loadingDistricts ? 'Loading districts...' : 'Select district'
             } />
           </SelectTrigger>
           <SelectContent className="max-h-60">
             {districts.map(d => (
-              <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+              <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -100,16 +99,16 @@ export function LocationCascade({
 
       <div className="space-y-2">
         <Label>Mandal / Taluka *</Label>
-        <Select value={mandal} onValueChange={handleMandalSelect} disabled={!districtId}>
+        <Select value={mandal} onValueChange={handleMandalSelect} disabled={!districtCode}>
           <SelectTrigger>
             <SelectValue placeholder={
-              !districtId ? 'Select district first' :
+              !districtCode ? 'Select district first' :
               loadingMandals ? 'Loading mandals...' : 'Select mandal'
             } />
           </SelectTrigger>
           <SelectContent className="max-h-60">
             {mandals.map(m => (
-              <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+              <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
