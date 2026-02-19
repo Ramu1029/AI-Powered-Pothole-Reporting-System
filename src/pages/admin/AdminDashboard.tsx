@@ -353,15 +353,43 @@ export default function AdminDashboard() {
                 </h3>
                 <div className="space-y-3">
                   {pendingStaff.map(staff => (
-                    <div key={staff.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-foreground">{staff.name}</p>
-                        <p className="text-sm text-muted-foreground">{staff.email}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {staff.state && `${staff.mandal || ''}, ${staff.district || ''}, ${staff.state}`}
-                        </p>
+                    <div key={staff.id} className="flex items-start justify-between p-4 bg-muted/50 rounded-lg gap-4">
+                      <div className="space-y-2 min-w-0">
+                        <div>
+                          <p className="font-medium text-foreground">{staff.name}</p>
+                          <p className="text-sm text-muted-foreground">{staff.email}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                          {staff.phone && (
+                            <div>
+                              <span className="text-muted-foreground">Phone: </span>
+                              <span className="font-medium text-foreground">{staff.phone}</span>
+                            </div>
+                          )}
+                          {staff.state && (
+                            <div>
+                              <span className="text-muted-foreground">State: </span>
+                              <span className="font-medium text-foreground">{staff.state}</span>
+                            </div>
+                          )}
+                          {staff.district && (
+                            <div>
+                              <span className="text-muted-foreground">District: </span>
+                              <span className="font-medium text-foreground">{staff.district}</span>
+                            </div>
+                          )}
+                          {staff.mandal && (
+                            <div>
+                              <span className="text-muted-foreground">Mandal: </span>
+                              <span className="font-medium text-foreground">{staff.mandal}</span>
+                            </div>
+                          )}
+                          {!staff.phone && !staff.state && (
+                            <p className="text-muted-foreground col-span-2 italic">Verification details not yet submitted</p>
+                          )}
+                        </div>
                       </div>
-                      <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)}>
+                      <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)} className="shrink-0">
                         <CheckCircle className="h-4 w-4" />
                         Approve
                       </Button>
