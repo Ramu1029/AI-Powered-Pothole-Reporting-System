@@ -14,11 +14,24 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    // Extract the path after /location-proxy, e.g. /locations/states
-    const proxyPath = url.searchParams.get('path') || '';
-    const queryString = url.searchParams.get('query') || '';
+    const type = url.searchParams.get('type') || '';
+    const stateCode = url.searchParams.get('state_code') || '';
+    const districtCode = url.searchParams.get('district_code') || '';
 
-    const targetUrl = `${BASE_URL}${proxyPath}${queryString ? `?${queryString}` : ''}`;
+    let targetUrl = '';
+
+    if (type === 'states') {
+      targetUrl = `${BASE_URL}/locations/states`;
+    } else if (type === 'districts' && stateCode) {
+      targetUrl = `${BASE_URL}/districts?state_code=${stateCode}`;
+    } else if (type === 'talukas' && districtCode) {
+      targetUrl = `${BASE_URL}/talukas?district_code=${districtCode}`;
+    } else {
+      return new Response(JSON.stringify({ error: 'Invalid parameters' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const response = await fetch(targetUrl, {
       headers: { Accept: 'application/json' },

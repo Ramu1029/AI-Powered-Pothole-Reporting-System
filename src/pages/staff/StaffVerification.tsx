@@ -17,8 +17,8 @@ export default function StaffVerification() {
     state: '',
     district: '',
     mandal: '',
-    stateId: null as number | null,
-    districtId: null as number | null,
+    stateCode: null as string | null,
+    districtCode: null as string | null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -99,10 +99,10 @@ export default function StaffVerification() {
             state={formData.state}
             district={formData.district}
             mandal={formData.mandal}
-            stateId={formData.stateId}
-            districtId={formData.districtId}
-            onStateChange={(name, id) => setFormData(prev => ({ ...prev, state: name, stateId: id, district: '', districtId: null, mandal: '' }))}
-            onDistrictChange={(name, id) => setFormData(prev => ({ ...prev, district: name, districtId: id, mandal: '' }))}
+            stateCode={formData.stateCode}
+            districtCode={formData.districtCode}
+            onStateChange={(name, code) => setFormData(prev => ({ ...prev, state: name, stateCode: code, district: '', districtCode: null, mandal: '' }))}
+            onDistrictChange={(name, code) => setFormData(prev => ({ ...prev, district: name, districtCode: code, mandal: '' }))}
             onMandalChange={(name) => setFormData(prev => ({ ...prev, mandal: name }))}
             errors={errors}
           />
