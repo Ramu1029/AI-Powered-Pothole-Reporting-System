@@ -60,9 +60,9 @@ export default function AdminDashboard() {
 
   // Location filters
   const [filterState, setFilterState] = useState('all');
+  const [filterStateId, setFilterStateId] = useState<number | null>(null);
   const [filterDistrict, setFilterDistrict] = useState('all');
-  const [filterMandal, setFilterMandal] = useState('all');
-  const { states, districts, mandals, fetchDistricts, fetchMandals } = useIndiaLocations();
+  const { states, districts, fetchDistricts } = useIndiaLocations();
 
   if (!user) return null;
 
@@ -72,7 +72,6 @@ export default function AdminDashboard() {
   const filteredReports = reports.filter(r => {
     if (filterState !== 'all' && r.location.state !== filterState) return false;
     if (filterDistrict !== 'all' && r.location.district !== filterDistrict) return false;
-    if (filterMandal !== 'all' && r.location.mandal !== filterMandal) return false;
     return true;
   });
 
@@ -107,7 +106,6 @@ export default function AdminDashboard() {
     value: count,
   }));
 
-  // Reports grouped by district
   const reportsByDistrict = Object.entries(
     filteredReports.reduce((acc, report) => {
       const district = report.location.district || 'Unknown';
@@ -126,21 +124,28 @@ export default function AdminDashboard() {
   };
 
   const handleStateFilter = (value: string) => {
-    setFilterState(value);
     setFilterDistrict('all');
-    setFilterMandal('all');
     if (value !== 'all') {
-      const selected = states.find(s => s.name === value);
-      if (selected) fetchDistricts(selected.code);
+      const id = Number(value);
+      const selected = states.find(s => s.state_id === id);
+      if (selected) {
+        setFilterState(selected.state_name);
+        setFilterStateId(selected.state_id);
+        fetchDistricts(selected.state_id);
+      }
+    } else {
+      setFilterState('all');
+      setFilterStateId(null);
     }
   };
 
   const handleDistrictFilter = (value: string) => {
-    setFilterDistrict(value);
-    setFilterMandal('all');
     if (value !== 'all') {
-      const selected = districts.find(d => d.name === value);
-      if (selected) fetchMandals(selected.code);
+      const id = Number(value);
+      const selected = districts.find(d => d.district_id === id);
+      if (selected) setFilterDistrict(selected.district_name);
+    } else {
+      setFilterDistrict('all');
     }
   };
 
@@ -162,39 +167,34 @@ export default function AdminDashboard() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Filter by Location</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select value={filterState} onValueChange={handleStateFilter}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Select
+              value={filterStateId !== null ? String(filterStateId) : 'all'}
+              onValueChange={handleStateFilter}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All States" />
               </SelectTrigger>
               <SelectContent className="max-h-60">
                 <SelectItem value="all">All States</SelectItem>
                 {states.map(s => (
-                  <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>
+                  <SelectItem key={s.state_id} value={String(s.state_id)}>{s.state_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filterDistrict} onValueChange={handleDistrictFilter} disabled={filterState === 'all'}>
+            <Select
+              value={filterDistrict === 'all' ? 'all' : String(districts.find(d => d.district_name === filterDistrict)?.district_id ?? 'all')}
+              onValueChange={handleDistrictFilter}
+              disabled={filterStateId === null}
+            >
               <SelectTrigger>
-                <SelectValue placeholder={filterState === 'all' ? 'Select state first' : 'All Districts'} />
+                <SelectValue placeholder={filterStateId === null ? 'Select state first' : 'All Districts'} />
               </SelectTrigger>
               <SelectContent className="max-h-60">
                 <SelectItem value="all">All Districts</SelectItem>
                 {districts.map(d => (
-                  <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterMandal} onValueChange={setFilterMandal} disabled={filterDistrict === 'all'}>
-              <SelectTrigger>
-                <SelectValue placeholder={filterDistrict === 'all' ? 'Select district first' : 'All Mandals'} />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                <SelectItem value="all">All Mandals</SelectItem>
-                {mandals.map(m => (
-                  <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
+                  <SelectItem key={d.district_id} value={String(d.district_id)}>{d.district_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
