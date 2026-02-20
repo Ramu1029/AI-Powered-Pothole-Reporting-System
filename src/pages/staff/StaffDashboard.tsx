@@ -7,13 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -33,7 +26,7 @@ import {
   Camera,
   X,
   Loader2,
-  Upload,
+  AlertTriangle,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,9 +44,8 @@ const hazardTypeLabels: Record<string, string> = {
 
 export default function StaffDashboard() {
   const { user } = useAuth();
-  const { reports, updateReportStatus, assignReport } = useData();
+  const { reports, updateReportStatus } = useData();
   const [selectedReport, setSelectedReport] = useState<HazardReport | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [remark, setRemark] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -63,25 +55,14 @@ export default function StaffDashboard() {
 
   if (!user) return null;
 
-  const regionReports = reports.filter(
-    r => (r.location.state === user.state && r.location.district === user.district) || r.assignedTo === user.id
-  );
-
-  const filteredReports = statusFilter === 'all'
-    ? regionReports
-    : regionReports.filter(r => r.status === statusFilter);
+  // Staff sees only reports assigned to them
+  const myReports = reports.filter(r => r.assignedTo === user.id);
 
   const stats = {
-    total: regionReports.length,
-    pending: regionReports.filter(r => r.status === 'pending').length,
-    assigned: regionReports.filter(r => r.assignedTo === user.id).length,
-    resolved: regionReports.filter(r => r.status === 'resolved').length,
-  };
-
-  const handleTakeAssignment = async (report: HazardReport) => {
-    await assignReport(report.id, user.id, user.name);
-    setSuccessMessage('Report assigned to you successfully');
-    setTimeout(() => setSuccessMessage(''), 3000);
+    total: myReports.length,
+    pending: myReports.filter(r => r.status === 'pending' || r.status === 'under_review').length,
+    inProgress: myReports.filter(r => r.status === 'in_progress' || r.status === 'verified').length,
+    resolved: myReports.filter(r => r.status === 'resolved').length,
   };
 
   const handleProofSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,6 +95,11 @@ export default function StaffDashboard() {
   const handleStatusUpdate = async (newStatus: ReportStatus) => {
     if (!selectedReport) return;
 
+    // Require proof image when resolving
+    if (newStatus === 'resolved' && !proofFile) {
+      return;
+    }
+
     setUploadingProof(true);
     let proofUrl: string | null = null;
     if (proofFile) {
@@ -122,7 +108,6 @@ export default function StaffDashboard() {
 
     const remarkText = remark.trim() || `Status updated to ${newStatus}`;
 
-    // If proof uploaded, save it to the report
     if (proofUrl) {
       await supabase
         .from('hazard_reports' as any)
@@ -141,6 +126,15 @@ export default function StaffDashboard() {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
+  const closeModal = () => {
+    setSelectedReport(null);
+    removeProof();
+    setRemark('');
+  };
+
+  const canResolve = selectedReport?.status === 'in_progress';
+  const needsProofForResolve = canResolve && !proofFile;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -149,7 +143,7 @@ export default function StaffDashboard() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Manage hazard reports in {user.district ? `${user.district}, ${user.state}` : user.region}
+            Reports assigned to you in {user.district ? `${user.district}, ${user.state}` : user.region || 'your region'}
           </p>
         </div>
 
@@ -164,7 +158,7 @@ export default function StaffDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-foreground">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Total Reports</p>
+                <p className="text-sm text-muted-foreground">Assigned to Me</p>
               </div>
             </div>
           </div>
@@ -175,7 +169,7 @@ export default function StaffDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-foreground">{stats.pending}</p>
-                <p className="text-sm text-muted-foreground">Pending Review</p>
+                <p className="text-sm text-muted-foreground">Needs Review</p>
               </div>
             </div>
           </div>
@@ -185,8 +179,8 @@ export default function StaffDashboard() {
                 <User className="h-5 w-5 text-accent" />
               </div>
               <div>
-                <p className="text-2xl font-semibold text-foreground">{stats.assigned}</p>
-                <p className="text-sm text-muted-foreground">Assigned to Me</p>
+                <p className="text-2xl font-semibold text-foreground">{stats.inProgress}</p>
+                <p className="text-sm text-muted-foreground">In Progress</p>
               </div>
             </div>
           </div>
@@ -203,126 +197,106 @@ export default function StaffDashboard() {
           </div>
         </div>
 
-        {/* Filter & Reports List */}
+        {/* Reports List */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="section-title mb-0">Reports</h2>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Reports</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="under_review">Under Review</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <h2 className="section-title mb-0">My Assigned Reports</h2>
 
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Report</th>
-                  <th>Location</th>
-                  <th>AI Analysis</th>
-                  <th>Status</th>
-                  <th>Assigned</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReports.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No reports found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredReports.map(report => (
-                    <tr key={report.id}>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <img src={report.imageUrl} alt="" className="w-12 h-12 rounded-md object-cover" />
-                          <div>
-                            <p className="font-medium text-foreground line-clamp-1">{report.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
-                            </p>
-                          </div>
+          {myReports.length === 0 ? (
+            <div className="bg-card rounded-lg border border-border p-12 text-center">
+              <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-foreground font-medium">No reports assigned yet</p>
+              <p className="text-muted-foreground text-sm mt-1">The admin will assign reports to you. Check back later.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {myReports.map(report => (
+                <div
+                  key={report.id}
+                  className="bg-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start gap-4">
+                    {report.imageUrl && (
+                      <img
+                        src={report.imageUrl}
+                        alt={report.title}
+                        className="w-20 h-20 rounded-lg object-cover border border-border shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-medium text-foreground">{report.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{report.description}</p>
                         </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span className="line-clamp-1">{report.location.address}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="space-y-1">
-                          <p className="text-sm">{hazardTypeLabels[report.aiAnalysis.hazardType]}</p>
+                        <div className="flex gap-2 shrink-0">
+                          <StatusBadge status={report.status} />
                           <SeverityBadge severity={report.aiAnalysis.severity} />
                         </div>
-                      </td>
-                      <td><StatusBadge status={report.status} /></td>
-                      <td>
-                        {report.assignedStaffName ? (
-                          <span className="text-sm text-foreground">{report.assignedStaffName}</span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Unassigned</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex gap-2">
-                          {!report.assignedTo && report.status === 'pending' && (
-                            <Button size="sm" variant="accent" onClick={() => handleTakeAssignment(report)}>
-                              Take
-                            </Button>
-                          )}
-                          {(report.assignedTo === user.id || report.status !== 'resolved') && (
-                            <Button size="sm" variant="outline" onClick={() => setSelectedReport(report)}>
-                              Review
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {report.location.district}, {report.location.state}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Brain className="h-3 w-3" />
+                          {hazardTypeLabels[report.aiAnalysis.hazardType]}
+                        </span>
+                      </div>
+
+                      {report.remarks.length > 0 && (
+                        <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+                          Last remark: {report.remarks[report.remarks.length - 1]}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="accent"
+                      className="shrink-0"
+                      onClick={() => setSelectedReport(report)}
+                    >
+                      Review
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Review Modal */}
-      <Dialog open={!!selectedReport} onOpenChange={() => { setSelectedReport(null); removeProof(); }}>
+      {/* Review & Response Modal */}
+      <Dialog open={!!selectedReport} onOpenChange={closeModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Review Report</DialogTitle>
+            <DialogTitle>Review & Respond to Report</DialogTitle>
           </DialogHeader>
 
           {selectedReport && (
             <div className="space-y-6">
+              {/* Report Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg overflow-hidden border border-border">
                   <img src={selectedReport.imageUrl} alt={selectedReport.title} className="w-full aspect-video object-cover" />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
                     <h3 className="font-medium text-foreground">{selectedReport.title}</h3>
                     <p className="text-sm text-muted-foreground mt-1">{selectedReport.description}</p>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
                     <span>{selectedReport.location.address}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
                     <span>{format(new Date(selectedReport.createdAt), 'MMM d, yyyy h:mm a')}</span>
                   </div>
                   <div className="flex gap-2">
@@ -338,13 +312,14 @@ export default function StaffDashboard() {
                   <Brain className="h-4 w-4 text-accent" />
                   <span className="text-sm font-medium">AI Analysis</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{selectedReport.aiAnalysis.description}</p>
+                <p className="text-sm font-medium">{hazardTypeLabels[selectedReport.aiAnalysis.hazardType]}</p>
+                <p className="text-sm text-muted-foreground mt-1">{selectedReport.aiAnalysis.description}</p>
                 <p className="text-xs text-muted-foreground mt-2">
                   Confidence: {Math.round(selectedReport.aiAnalysis.confidence * 100)}%
                 </p>
               </div>
 
-              {/* Remarks */}
+              {/* Previous Remarks */}
               {selectedReport.remarks.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-foreground mb-2">Previous Remarks</h4>
@@ -358,7 +333,14 @@ export default function StaffDashboard() {
 
               {/* Proof Image Upload */}
               <div className="space-y-2">
-                <Label>Proof Image (optional)</Label>
+                <Label>
+                  Proof Image
+                  {canResolve && <span className="text-destructive ml-1">*</span>}
+                  {!canResolve && <span className="text-muted-foreground ml-1">(optional)</span>}
+                </Label>
+                {canResolve && (
+                  <p className="text-xs text-muted-foreground">Upload a photo showing the hazard has been resolved. Required to mark as resolved.</p>
+                )}
                 {proofPreview ? (
                   <div className="relative rounded-lg overflow-hidden border border-border">
                     <img src={proofPreview} alt="Proof" className="w-full aspect-video object-cover" />
@@ -392,28 +374,28 @@ export default function StaffDashboard() {
 
               {/* Add Remark */}
               <div>
-                <Label>Add Remark</Label>
+                <Label>Add Remark / Observation</Label>
                 <Textarea
                   value={remark}
                   onChange={(e) => setRemark(e.target.value)}
-                  placeholder="Enter your remarks or observations..."
+                  placeholder="Describe your findings, actions taken, or any observations..."
                   className="mt-2"
                   rows={3}
                 />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3">
                 {(selectedReport.status === 'pending' || selectedReport.status === 'under_review') && (
-                  <>
+                  <div className="flex gap-3">
                     <Button
                       variant="accent"
                       onClick={() => handleStatusUpdate('verified')}
                       className="flex-1"
                       disabled={uploadingProof}
                     >
-                      {uploadingProof ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                      Verify
+                      {uploadingProof ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                      Verify Report
                     </Button>
                     <Button
                       variant="destructive"
@@ -421,31 +403,42 @@ export default function StaffDashboard() {
                       className="flex-1"
                       disabled={uploadingProof}
                     >
-                      <XCircle className="h-4 w-4" />
+                      <XCircle className="h-4 w-4 mr-2" />
                       Reject
                     </Button>
-                  </>
+                  </div>
                 )}
+
                 {selectedReport.status === 'verified' && (
                   <Button
                     variant="warning"
                     onClick={() => handleStatusUpdate('in_progress')}
-                    className="flex-1"
+                    className="w-full"
                     disabled={uploadingProof}
                   >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
                     Mark In Progress
                   </Button>
                 )}
+
                 {selectedReport.status === 'in_progress' && (
-                  <Button
-                    variant="success"
-                    onClick={() => handleStatusUpdate('resolved')}
-                    className="flex-1"
-                    disabled={uploadingProof}
-                  >
-                    {uploadingProof ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                    Mark Resolved
-                  </Button>
+                  <div className="space-y-2">
+                    {needsProofForResolve && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Please upload a proof image before marking as resolved
+                      </p>
+                    )}
+                    <Button
+                      variant="success"
+                      onClick={() => handleStatusUpdate('resolved')}
+                      className="w-full"
+                      disabled={uploadingProof || needsProofForResolve}
+                    >
+                      {uploadingProof ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                      Mark Resolved (with proof)
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
