@@ -13,6 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useIndiaLocations } from '@/hooks/useIndiaLocations';
 import {
   BarChart,
@@ -30,15 +37,19 @@ import {
 import {
   LayoutDashboard,
   Users,
-  MapPin,
   FileText,
   CheckCircle,
   Clock,
   AlertTriangle,
   UserCheck,
   Filter,
+  UserPlus,
+  MapPin,
+  Brain,
+  Calendar,
 } from 'lucide-react';
-import { HazardType } from '@/types';
+import { HazardReport, HazardType } from '@/types';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const COLORS = ['hsl(185, 35%, 35%)', 'hsl(220, 25%, 35%)', 'hsl(160, 40%, 35%)', 'hsl(40, 50%, 45%)', 'hsl(0, 45%, 45%)'];
 
@@ -55,7 +66,7 @@ const hazardTypeLabels: Record<HazardType, string> = {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { reports, users, getPendingStaff, approveStaff } = useData();
+  const { reports, users, getPendingStaff, approveStaff, assignReport } = useData();
   const [successMessage, setSuccessMessage] = useState('');
 
   // Location filters
@@ -64,9 +75,18 @@ export default function AdminDashboard() {
   const [filterDistrict, setFilterDistrict] = useState('all');
   const { states, districts, fetchDistricts } = useIndiaLocations();
 
+  // Assign modal state
+  const [assigningReport, setAssigningReport] = useState<HazardReport | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  // Report detail modal
+  const [viewingReport, setViewingReport] = useState<HazardReport | null>(null);
+
   if (!user) return null;
 
   const pendingStaff = getPendingStaff();
+  const approvedStaff = users.filter(u => u.role === 'municipal_staff' && u.isApproved);
 
   // Filter reports by location
   const filteredReports = reports.filter(r => {
@@ -147,6 +167,25 @@ export default function AdminDashboard() {
     } else {
       setFilterDistrict('all');
     }
+  };
+
+  const openAssignModal = (report: HazardReport) => {
+    setAssigningReport(report);
+    setSelectedStaffId(report.assignedTo || '');
+  };
+
+  const handleAssign = async () => {
+    if (!assigningReport || !selectedStaffId) return;
+    setAssigning(true);
+    const staff = approvedStaff.find(s => s.id === selectedStaffId);
+    if (staff) {
+      await assignReport(assigningReport.id, staff.id, staff.name);
+      setSuccessMessage(`Report assigned to ${staff.name}`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+    setAssigning(false);
+    setAssigningReport(null);
+    setSelectedStaffId('');
   };
 
   return (
@@ -446,12 +485,12 @@ export default function AdminDashboard() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Title</th>
-                    <th>State</th>
-                    <th>District</th>
-                    <th>Mandal</th>
+                    <th>Report</th>
+                    <th>Location</th>
                     <th>Severity</th>
                     <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -464,12 +503,50 @@ export default function AdminDashboard() {
                   ) : (
                     filteredReports.map(report => (
                       <tr key={report.id}>
-                        <td className="font-medium text-foreground">{report.title}</td>
-                        <td className="text-sm">{report.location.state || '-'}</td>
-                        <td className="text-sm">{report.location.district || '-'}</td>
-                        <td className="text-sm">{report.location.mandal || '-'}</td>
+                        <td>
+                          <div>
+                            <p className="font-medium text-foreground line-clamp-1">{report.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="text-sm">
+                          <div>
+                            <p>{report.location.district || '-'}</p>
+                            <p className="text-xs text-muted-foreground">{report.location.state || ''}</p>
+                          </div>
+                        </td>
                         <td><SeverityBadge severity={report.aiAnalysis.severity} /></td>
                         <td><StatusBadge status={report.status} /></td>
+                        <td>
+                          {report.assignedStaffName ? (
+                            <span className="text-sm text-foreground font-medium">{report.assignedStaffName}</span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Unassigned</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setViewingReport(report)}
+                            >
+                              View
+                            </Button>
+                            {report.status !== 'resolved' && report.status !== 'rejected' && (
+                              <Button
+                                size="sm"
+                                variant="accent"
+                                onClick={() => openAssignModal(report)}
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" />
+                                Assign
+                              </Button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -479,6 +556,137 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Assign Staff Modal */}
+      <Dialog open={!!assigningReport} onOpenChange={() => { setAssigningReport(null); setSelectedStaffId(''); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Report to Staff</DialogTitle>
+          </DialogHeader>
+
+          {assigningReport && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="font-medium text-foreground text-sm">{assigningReport.title}</p>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {assigningReport.location.district}, {assigningReport.location.state}
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <StatusBadge status={assigningReport.status} />
+                  <SeverityBadge severity={assigningReport.aiAnalysis.severity} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Select Staff Member</label>
+                {approvedStaff.length === 0 ? (
+                  <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                    No approved staff available. Approve staff members first from the Staff Management tab.
+                  </p>
+                ) : (
+                  <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a staff member..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {approvedStaff.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <div className="flex flex-col">
+                            <span>{s.name}</span>
+                            {s.district && (
+                              <span className="text-xs text-muted-foreground">{s.district}, {s.state}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAssigningReport(null); setSelectedStaffId(''); }}>
+              Cancel
+            </Button>
+            <Button
+              variant="accent"
+              onClick={handleAssign}
+              disabled={!selectedStaffId || assigning || approvedStaff.length === 0}
+            >
+              {assigning ? 'Assigning...' : 'Assign'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Detail Modal */}
+      <Dialog open={!!viewingReport} onOpenChange={() => setViewingReport(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Report Details</DialogTitle>
+          </DialogHeader>
+
+          {viewingReport && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg overflow-hidden border border-border">
+                  <img src={viewingReport.imageUrl} alt={viewingReport.title} className="w-full aspect-video object-cover" />
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-medium text-foreground">{viewingReport.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{viewingReport.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{viewingReport.location.address}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{format(new Date(viewingReport.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <StatusBadge status={viewingReport.status} />
+                    <SeverityBadge severity={viewingReport.aiAnalysis.severity} />
+                  </div>
+                  {viewingReport.assignedStaffName && (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Assigned to: </span>
+                      <span className="font-medium text-foreground">{viewingReport.assignedStaffName}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain className="h-4 w-4 text-accent" />
+                  <span className="text-sm font-medium">AI Analysis</span>
+                </div>
+                <p className="text-sm font-medium">{hazardTypeLabels[viewingReport.aiAnalysis.hazardType]}</p>
+                <p className="text-sm text-muted-foreground mt-1">{viewingReport.aiAnalysis.description}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Confidence: {Math.round(viewingReport.aiAnalysis.confidence * 100)}%
+                </p>
+              </div>
+
+              {viewingReport.remarks.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-foreground mb-2">Remarks</h4>
+                  <div className="space-y-2">
+                    {viewingReport.remarks.map((r, i) => (
+                      <div key={i} className="bg-muted/50 rounded-md p-2 text-sm text-muted-foreground">{r}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
