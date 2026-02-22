@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormMessage } from '@/components/common/FormMessage';
 import { Shield } from 'lucide-react';
-import { loginCredentials } from '@/data/mockData';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -104,24 +103,6 @@ export default function Login() {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
-
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground text-center">Quick fill demo credentials:</p>
-            <div className="flex gap-2 justify-center">
-              {Object.entries(loginCredentials).map(([role, creds]) => (
-                <Button
-                  key={role}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => { setEmail(creds.email); setPassword(creds.password); }}
-                >
-                  {role === 'municipal_staff' ? 'Staff' : role.charAt(0).toUpperCase() + role.slice(1)}
-                </Button>
-              ))}
-            </div>
-          </div>
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}

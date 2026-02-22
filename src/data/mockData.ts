@@ -364,13 +364,13 @@ export const loginCredentials = {
     name: 'James Mitchell',
   },
   municipal_staff: {
-    email: 'velma789@gmail.com',
-    password: '123456789',
-    name: 'Municipal Staff',
+    email: 'emily.watson@municipality.gov',
+    password: 'staff123',
+    name: 'Emily Watson',
   },
   admin: {
-    email: 'brahmi7711@gmail.com',
-    password: '123456789',
-    name: 'Admin',
+    email: 'robert.anderson@municipality.gov',
+    password: 'admin123',
+    name: 'Robert Anderson',
   },
 };
