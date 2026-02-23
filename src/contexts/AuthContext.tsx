@@ -98,18 +98,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true };
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, name: string, role: UserRole) => {
-    const { error } = await supabase.auth.signUp({
+  const signup = useCallback(
+  async (email: string, password: string, name: string, role: UserRole) => {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { name, role },
+        data: { name },
       },
     });
+
     if (error) return { success: false, error: error.message };
+
+    if (data.user) {
+      // Auto-assign admin if email matches
+      const assignedRole =
+        email === "brahmi7711@gmail.com" ? "admin" : role;
+
+      // Insert into profiles table
+      await supabase.from("profiles").insert({
+        user_id: data.user.id,
+        email,
+        name,
+        is_verified: true,
+      });
+
+      // Insert into user_roles table
+      await supabase.from("user_roles").insert({
+        user_id: data.user.id,
+        role: assignedRole,
+        is_approved: true,
+      });
+    }
+
     return { success: true };
-  }, []);
+  },
+  []
+);
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
