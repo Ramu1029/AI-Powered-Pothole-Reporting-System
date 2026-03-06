@@ -73,18 +73,16 @@ export default function StaffDashboard() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
 
-  if (!user) return null;
-
   // Check if profile data is complete
-  const isProfileComplete = !!(user.phone && user.state && user.district && user.mandal);
+  const isProfileComplete = !!(user?.phone && user?.state && user?.district && user?.mandal);
 
   // Show mandatory modal if profile is incomplete
   useEffect(() => {
-    if (!isProfileComplete) {
+    if (user && !isProfileComplete) {
       setProfileIncomplete(true);
       setShowProfileModal(true);
     }
-  }, [isProfileComplete]);
+  }, [user, isProfileComplete]);
 
   // Load existing profile data when opening edit modal
   useEffect(() => {
@@ -99,6 +97,8 @@ export default function StaffDashboard() {
       });
     }
   }, [showProfileModal, user]);
+
+  if (!user) return null;
 
   // Staff sees only reports assigned to them
   const myReports = reports.filter(r => r.assignedTo === user.id);
