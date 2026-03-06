@@ -1,11 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge, SeverityBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LocationCascade } from '@/components/common/LocationCascade';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,10 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  Settings,
+  Phone,
+  MapPinned,
+  Edit,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +59,46 @@ export default function StaffDashboard() {
   const [uploadingProof, setUploadingProof] = useState(false);
   const proofInputRef = useRef<HTMLInputElement>(null);
 
+  // Profile editing state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileData, setProfileData] = useState({
+    phone: '',
+    state: '',
+    district: '',
+    mandal: '',
+    stateId: null as number | null,
+    districtId: null as number | null,
+  });
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+
   if (!user) return null;
+
+  // Check if profile data is complete
+  const isProfileComplete = !!(user.phone && user.state && user.district && user.mandal);
+
+  // Show mandatory modal if profile is incomplete
+  useEffect(() => {
+    if (!isProfileComplete) {
+      setProfileIncomplete(true);
+      setShowProfileModal(true);
+    }
+  }, [isProfileComplete]);
+
+  // Load existing profile data when opening edit modal
+  useEffect(() => {
+    if (showProfileModal && user) {
+      setProfileData({
+        phone: user.phone || '',
+        state: user.state || '',
+        district: user.district || '',
+        mandal: user.mandal || '',
+        stateId: null,
+        districtId: null,
+      });
+    }
+  }, [showProfileModal, user]);
 
   // Staff sees only reports assigned to them
   const myReports = reports.filter(r => r.assignedTo === user.id);
@@ -95,7 +140,6 @@ export default function StaffDashboard() {
   const handleStatusUpdate = async (newStatus: ReportStatus) => {
     if (!selectedReport) return;
 
-    // Require proof image when resolving
     if (newStatus === 'resolved' && !proofFile) {
       return;
     }
@@ -132,6 +176,42 @@ export default function StaffDashboard() {
     setRemark('');
   };
 
+  // Profile validation and save
+  const validateProfile = () => {
+    const errors: Record<string, string> = {};
+    if (!profileData.phone.trim()) errors.phone = 'Phone number is required';
+    else if (!/^\+?[\d\s\-()]{7,15}$/.test(profileData.phone.trim())) errors.phone = 'Enter a valid phone number';
+    if (!profileData.state) errors.state = 'State is required';
+    if (!profileData.district) errors.district = 'District is required';
+    if (!profileData.mandal) errors.mandal = 'Mandal/Taluka is required';
+    setProfileErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!validateProfile() || !user) return;
+    setSavingProfile(true);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        phone: profileData.phone.trim(),
+        state: profileData.state,
+        district: profileData.district,
+        mandal: profileData.mandal,
+        region: `${profileData.mandal}, ${profileData.district}`,
+        is_verified: true,
+      } as any)
+      .eq('user_id', user.id);
+
+    setSavingProfile(false);
+    if (!error) {
+      setShowProfileModal(false);
+      setProfileIncomplete(false);
+      window.location.reload();
+    }
+  };
+
   const canResolve = selectedReport?.status === 'in_progress';
   const needsProofForResolve = canResolve && !proofFile;
 
@@ -140,14 +220,42 @@ export default function StaffDashboard() {
       <Header />
 
       <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Reports assigned to you in {user.district ? `${user.district}, ${user.state}` : user.region || 'your region'}
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Reports assigned to you in {user.district ? `${user.district}, ${user.state}` : user.region || 'your region'}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowProfileModal(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            My Profile
+          </Button>
         </div>
 
         {successMessage && <FormMessage type="success" message={successMessage} />}
+
+        {/* Profile Info Card */}
+        {isProfileComplete && (
+          <div className="bg-card rounded-lg border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground">{user.phone}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPinned className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground">{user.mandal}, {user.district}, {user.state}</span>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowProfileModal(true)}>
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -443,6 +551,62 @@ export default function StaffDashboard() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Edit / Mandatory Completion Modal */}
+      <Dialog
+        open={showProfileModal}
+        onOpenChange={(open) => {
+          // Prevent closing if profile is incomplete
+          if (!open && !isProfileComplete) return;
+          setShowProfileModal(open);
+        }}
+      >
+        <DialogContent className="max-w-md" onPointerDownOutside={(e) => { if (!isProfileComplete) e.preventDefault(); }}>
+          <DialogHeader>
+            <DialogTitle>
+              {profileIncomplete && !isProfileComplete ? 'Complete Your Profile' : 'Edit Profile'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {profileIncomplete && !isProfileComplete && (
+            <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+              <p className="text-sm text-foreground">
+                You must complete your profile details before you can access the dashboard. Please fill in all required fields.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-phone">Phone Number *</Label>
+              <Input
+                id="profile-phone"
+                value={profileData.phone}
+                onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+91 98765 43210"
+              />
+              {profileErrors.phone && <p className="text-xs text-destructive">{profileErrors.phone}</p>}
+            </div>
+
+            <LocationCascade
+              state={profileData.state}
+              district={profileData.district}
+              mandal={profileData.mandal}
+              stateId={profileData.stateId}
+              onStateChange={(name, id) => setProfileData(prev => ({ ...prev, state: name, stateId: id, district: '', districtId: null, mandal: '' }))}
+              onDistrictChange={(name, id) => setProfileData(prev => ({ ...prev, district: name, districtId: id, mandal: '' }))}
+              onMandalChange={(name) => setProfileData(prev => ({ ...prev, mandal: name }))}
+              errors={profileErrors}
+            />
+
+            <Button onClick={handleSaveProfile} className="w-full" variant="accent" disabled={savingProfile}>
+              {savingProfile && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {isProfileComplete ? 'Update Profile' : 'Save & Continue'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
