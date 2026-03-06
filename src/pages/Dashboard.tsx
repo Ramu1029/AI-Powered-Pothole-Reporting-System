@@ -29,19 +29,15 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  // Municipal staff: check identity verification first, then approval
+  // Municipal staff: first wait for admin approval, then verify identity
   if (user.role === 'municipal_staff') {
-    // Check if identity is verified (phone, city, state)
-    if (!user.isVerified) {
-      return <StaffVerification />;
-    }
-    // Then check admin approval
+    // First check admin approval
     if (!user.isApproved) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-8">
           <div className="text-center max-w-md space-y-4">
             <h2 className="text-2xl font-semibold text-foreground">Account Pending Approval</h2>
-            <p className="text-muted-foreground">Your identity has been verified. Your account is now awaiting administrator approval. You'll be able to access the dashboard once approved.</p>
+            <p className="text-muted-foreground">Your account is awaiting administrator approval. You'll be able to access the dashboard once approved.</p>
             <Button variant="outline" onClick={handleLogout} className="mt-4">
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -49,6 +45,10 @@ export default function Dashboard() {
           </div>
         </div>
       );
+    }
+    // Then check identity verification (phone, state, district, mandal)
+    if (!user.isVerified) {
+      return <StaffVerification />;
     }
     return <StaffDashboard />;
   }
