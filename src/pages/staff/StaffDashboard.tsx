@@ -145,42 +145,6 @@ export default function StaffDashboard() {
     setRemark('');
   };
 
-  // Profile validation and save
-  const validateProfile = () => {
-    const errors: Record<string, string> = {};
-    if (!profileData.phone.trim()) errors.phone = 'Phone number is required';
-    else if (!/^\+?[\d\s\-()]{7,15}$/.test(profileData.phone.trim())) errors.phone = 'Enter a valid phone number';
-    if (!profileData.state) errors.state = 'State is required';
-    if (!profileData.district) errors.district = 'District is required';
-    if (!profileData.mandal) errors.mandal = 'Mandal/Taluka is required';
-    setProfileErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSaveProfile = async () => {
-    if (!validateProfile() || !user) return;
-    setSavingProfile(true);
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        phone: profileData.phone.trim(),
-        state: profileData.state,
-        district: profileData.district,
-        mandal: profileData.mandal,
-        region: `${profileData.mandal}, ${profileData.district}`,
-        is_verified: true,
-      } as any)
-      .eq('user_id', user.id);
-
-    setSavingProfile(false);
-    if (!error) {
-      setShowProfileModal(false);
-      setProfileIncomplete(false);
-      window.location.reload();
-    }
-  };
-
   const canResolve = selectedReport?.status === 'in_progress';
   const needsProofForResolve = canResolve && !proofFile;
 
