@@ -29,9 +29,13 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  // Municipal staff: first wait for admin approval, then verify identity
+  // Municipal staff: first verify identity, then wait for admin approval
   if (user.role === 'municipal_staff') {
-    // First check admin approval
+    // First check identity verification (phone, state, district, mandal)
+    if (!user.isVerified) {
+      return <StaffVerification />;
+    }
+    // Then check admin approval
     if (!user.isApproved) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-8">
@@ -45,10 +49,6 @@ export default function Dashboard() {
           </div>
         </div>
       );
-    }
-    // Then check identity verification (phone, state, district, mandal)
-    if (!user.isVerified) {
-      return <StaffVerification />;
     }
     return <StaffDashboard />;
   }
