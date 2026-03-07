@@ -477,61 +477,12 @@ export default function StaffDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Profile Edit / Mandatory Completion Modal */}
-      <Dialog
+      {/* Profile Modal */}
+      <ProfileFormModal
         open={showProfileModal}
-        onOpenChange={(open) => {
-          // Prevent closing if profile is incomplete
-          if (!open && !isProfileComplete) return;
-          setShowProfileModal(open);
-        }}
-      >
-        <DialogContent className="max-w-md" onPointerDownOutside={(e) => { if (!isProfileComplete) e.preventDefault(); }}>
-          <DialogHeader>
-            <DialogTitle>
-              {profileIncomplete && !isProfileComplete ? 'Complete Your Profile' : 'Edit Profile'}
-            </DialogTitle>
-          </DialogHeader>
-
-          {profileIncomplete && !isProfileComplete && (
-            <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-              <p className="text-sm text-foreground">
-                You must complete your profile details before you can access the dashboard. Please fill in all required fields.
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="profile-phone">Phone Number *</Label>
-              <Input
-                id="profile-phone"
-                value={profileData.phone}
-                onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+91 98765 43210"
-              />
-              {profileErrors.phone && <p className="text-xs text-destructive">{profileErrors.phone}</p>}
-            </div>
-
-            <LocationCascade
-              state={profileData.state}
-              district={profileData.district}
-              mandal={profileData.mandal}
-              stateId={profileData.stateId}
-              onStateChange={(name, id) => setProfileData(prev => ({ ...prev, state: name, stateId: id, district: '', districtId: null, mandal: '' }))}
-              onDistrictChange={(name, id) => setProfileData(prev => ({ ...prev, district: name, districtId: id, mandal: '' }))}
-              onMandalChange={(name) => setProfileData(prev => ({ ...prev, mandal: name }))}
-              errors={profileErrors}
-            />
-
-            <Button onClick={handleSaveProfile} className="w-full" variant="accent" disabled={savingProfile}>
-              {savingProfile && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isProfileComplete ? 'Update Profile' : 'Save & Continue'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setShowProfileModal}
+        mandatory={!isProfileComplete}
+      />
     </div>
   );
 }
