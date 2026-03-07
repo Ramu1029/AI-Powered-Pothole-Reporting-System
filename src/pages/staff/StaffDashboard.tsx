@@ -167,21 +167,15 @@ export default function StaffDashboard() {
         {/* Profile Info Card */}
         {isProfileComplete && (
           <div className="bg-card rounded-lg border border-border p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground">{user.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPinned className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground">{user.mandal}, {user.district}, {user.state}</span>
-                </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="text-foreground">{user.phone}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowProfileModal(true)}>
-                <Edit className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
+              <div className="flex items-center gap-2 text-sm">
+                <MapPinned className="h-4 w-4 text-muted-foreground" />
+                <span className="text-foreground">{user.mandal}, {user.district}, {user.state}</span>
+              </div>
             </div>
           </div>
         )}
