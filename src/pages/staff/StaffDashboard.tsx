@@ -5,9 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { StatusBadge, SeverityBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LocationCascade } from '@/components/common/LocationCascade';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FormMessage } from '@/components/common/FormMessage';
+import { ProfileFormModal } from '@/components/common/ProfileFormModal';
 import { HazardReport, ReportStatus } from '@/types';
 import {
   ClipboardList,
@@ -29,10 +28,8 @@ import {
   X,
   Loader2,
   AlertTriangle,
-  Settings,
   Phone,
   MapPinned,
-  Edit,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
