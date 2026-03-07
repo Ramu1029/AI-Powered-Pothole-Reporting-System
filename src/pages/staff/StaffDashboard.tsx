@@ -160,10 +160,6 @@ export default function StaffDashboard() {
               Reports assigned to you in {user.district ? `${user.district}, ${user.state}` : user.region || 'your region'}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowProfileModal(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            My Profile
-          </Button>
         </div>
 
         {successMessage && <FormMessage type="success" message={successMessage} />}
