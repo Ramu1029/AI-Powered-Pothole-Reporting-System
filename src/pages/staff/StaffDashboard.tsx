@@ -56,44 +56,16 @@ export default function StaffDashboard() {
   const [uploadingProof, setUploadingProof] = useState(false);
   const proofInputRef = useRef<HTMLInputElement>(null);
 
-  // Profile editing state
+  // Profile state
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileData, setProfileData] = useState({
-    phone: '',
-    state: '',
-    district: '',
-    mandal: '',
-    stateId: null as number | null,
-    districtId: null as number | null,
-  });
-  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
-
-  // Check if profile data is complete
   const isProfileComplete = !!(user?.phone && user?.state && user?.district && user?.mandal);
 
   // Show mandatory modal if profile is incomplete
   useEffect(() => {
     if (user && !isProfileComplete) {
-      setProfileIncomplete(true);
       setShowProfileModal(true);
     }
   }, [user, isProfileComplete]);
-
-  // Load existing profile data when opening edit modal
-  useEffect(() => {
-    if (showProfileModal && user) {
-      setProfileData({
-        phone: user.phone || '',
-        state: user.state || '',
-        district: user.district || '',
-        mandal: user.mandal || '',
-        stateId: null,
-        districtId: null,
-      });
-    }
-  }, [showProfileModal, user]);
 
   if (!user) return null;
 
