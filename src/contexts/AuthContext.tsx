@@ -149,7 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(
     async (email: string, password: string, name: string, role: UserRole) => {
+<<<<<<< HEAD
       const { data, error } = await supabase.auth.signUp({
+=======
+      const { error } = await supabase.auth.signUp({
+>>>>>>> 3afe5cd41dbb0fb0c975bfc7a8c5f27699ea88c8
         email,
         password,
         options: {
@@ -159,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) return { success: false, error: error.message };
+<<<<<<< HEAD
 
       if (data.user) {
         // Auto-assign admin if email matches
@@ -200,6 +205,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     },
     [],
+=======
+      return { success: true };
+    },
+    []
+>>>>>>> 3afe5cd41dbb0fb0c975bfc7a8c5f27699ea88c8
   );
 
   const logout = useCallback(async () => {

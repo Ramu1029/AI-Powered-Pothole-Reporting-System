@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { Header } from '@/components/layout/Header';
@@ -8,12 +8,23 @@ import { Plus, FileText, Clock, CheckCircle } from 'lucide-react';
 import { ReportHazardModal } from './ReportHazardModal';
 import { ReportDetailModal } from './ReportDetailModal';
 import { HazardReport } from '@/types';
+import { ProfileFormModal } from '@/components/common/ProfileFormModal';
 
 export default function CitizenDashboard() {
   const { user } = useAuth();
   const { getReportsByUser, reports } = useData();
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<HazardReport | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const isProfileComplete = !!(user?.phone && user?.state && user?.district && user?.mandal);
+
+  // Show mandatory profile modal if incomplete
+  useEffect(() => {
+    if (user && !isProfileComplete) {
+      setShowProfileModal(true);
+    }
+  }, [user, isProfileComplete]);
 
   if (!user) return null;
 
@@ -137,6 +148,13 @@ export default function CitizenDashboard() {
       <ReportDetailModal
         report={selectedReport}
         onClose={() => setSelectedReport(null)}
+      />
+
+      {/* Mandatory profile form for citizens */}
+      <ProfileFormModal
+        open={showProfileModal}
+        onOpenChange={setShowProfileModal}
+        mandatory={!isProfileComplete}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { Header } from '@/components/layout/Header';
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FormMessage } from '@/components/common/FormMessage';
+import { ProfileFormModal } from '@/components/common/ProfileFormModal';
 import { HazardReport, ReportStatus } from '@/types';
 import {
   ClipboardList,
@@ -27,6 +28,8 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  Phone,
+  MapPinned,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +55,17 @@ export default function StaffDashboard() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const proofInputRef = useRef<HTMLInputElement>(null);
+
+  // Profile state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const isProfileComplete = !!(user?.phone && user?.state && user?.district && user?.mandal);
+
+  // Show mandatory modal if profile is incomplete
+  useEffect(() => {
+    if (user && !isProfileComplete) {
+      setShowProfileModal(true);
+    }
+  }, [user, isProfileComplete]);
 
   if (!user) return null;
 
@@ -95,7 +109,6 @@ export default function StaffDashboard() {
   const handleStatusUpdate = async (newStatus: ReportStatus) => {
     if (!selectedReport) return;
 
-    // Require proof image when resolving
     if (newStatus === 'resolved' && !proofFile) {
       return;
     }
@@ -140,14 +153,32 @@ export default function StaffDashboard() {
       <Header />
 
       <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Reports assigned to you in {user.district ? `${user.district}, ${user.state}` : user.region || 'your region'}
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Reports assigned to you in {user.district ? `${user.district}, ${user.state}` : user.region || 'your region'}
+            </p>
+          </div>
         </div>
 
         {successMessage && <FormMessage type="success" message={successMessage} />}
+
+        {/* Profile Info Card */}
+        {isProfileComplete && (
+          <div className="bg-card rounded-lg border border-border p-4">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="text-foreground">{user.phone}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <MapPinned className="h-4 w-4 text-muted-foreground" />
+                <span className="text-foreground">{user.mandal}, {user.district}, {user.state}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -445,6 +476,13 @@ export default function StaffDashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Profile Modal */}
+      <ProfileFormModal
+        open={showProfileModal}
+        onOpenChange={setShowProfileModal}
+        mandatory={!isProfileComplete}
+      />
     </div>
   );
 }
