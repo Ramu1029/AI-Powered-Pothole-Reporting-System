@@ -15,6 +15,7 @@ import { FormMessage } from '@/components/common/FormMessage';
 import { LocationCascade } from '@/components/common/LocationCascade';
 import { Upload, MapPin, Brain, Loader2, Camera, X, LocateFixed } from 'lucide-react';
 import { SeverityBadge } from '@/components/common/StatusBadge';
+import { reportKeywords } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ReportHazardModalProps {
@@ -46,7 +47,12 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const [createdReport, setCreatedReport] = useState<any>(null);
+  const [aiDelayMs, setAiDelayMs] = useState<number | null>(null);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiMessageIndex, setAiMessageIndex] = useState(0);
+  const [aiRemainingMs, setAiRemainingMs] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const aiIntervalRef = useRef<number | null>(null);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -121,13 +127,64 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
 
   const handleSubmit = async () => {
     if (!validateForm() || !user) return;
+    // Start AI processing UI and choose a randomized ETA (ms)
     setStep('analyzing');
-    setUploading(true);
+    // Shorter, user-friendly simulated AI ETAs (ms)
+    const choices = [10_000, 8_000, 4_000, 3_000];
+    const chosen = choices[Math.floor(Math.random() * choices.length)];
+    setAiDelayMs(chosen);
+    setAiRemainingMs(chosen);
+    setAiProgress(0);
+    setAiMessageIndex(0);
 
+    // Simulated AI progress updater
+    const start = Date.now();
+    const messages = [
+      'Uploading image to secure storage',
+      'Analyzing visual features',
+      'Identifying hazard type',
+      'Estimating severity & confidence',
+      'Composing analysis summary',
+    ];
+
+    const aiSimPromise = new Promise<void>((resolve) => {
+      aiIntervalRef.current = window.setInterval(() => {
+        const elapsed = Date.now() - start;
+
+        // base linear progress target
+        const basePct = Math.min(100, (elapsed / chosen) * 100);
+
+        // random increment to make progress feel organic
+        setAiProgress((prev) => {
+          const randInc = Math.floor(2 + Math.random() * 8); // 2-9
+          const jitterBack = Math.floor(Math.random() * 6); // 0-5
+          const candidate = Math.min(100, Math.max(prev + randInc, Math.floor(basePct) - jitterBack));
+          return candidate;
+        });
+
+        // small jitter for remaining time display
+        const jitter = Math.floor((Math.random() - 0.5) * 1000); // -500..+500ms
+        setAiRemainingMs(Math.max(0, Math.round(chosen - elapsed + jitter)));
+
+        const msgIndex = Math.min(messages.length - 1, Math.floor((elapsed / chosen) * messages.length));
+        setAiMessageIndex(msgIndex);
+
+        if (elapsed >= chosen) {
+          setAiProgress(100);
+          setAiRemainingMs(0);
+          if (aiIntervalRef.current) window.clearInterval(aiIntervalRef.current);
+          resolve();
+        }
+      }, 400);
+    });
+
+    // Keep performing real upload + addReport concurrently, but wait for both to finish
+    setUploading(true);
     const imageUrl = await uploadImage();
     setUploading(false);
 
     if (!imageUrl) {
+      if (aiIntervalRef.current) window.clearInterval(aiIntervalRef.current);
       setStep('form');
       setErrors(prev => ({ ...prev, image: 'Failed to upload image. Please try again.' }));
       return;
@@ -136,7 +193,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     const lat = formData.lat ? parseFloat(formData.lat) : 20.5937 + (Math.random() - 0.5) * 0.1;
     const lng = formData.lng ? parseFloat(formData.lng) : 78.9629 + (Math.random() - 0.5) * 0.1;
 
-    const report = await addReport({
+    const addReportPromise = addReport({
       reportedBy: user.id,
       reporterName: user.name,
       title: formData.title,
@@ -153,8 +210,14 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
       },
     });
 
-    if (report) {
-      setCreatedReport(report);
+    // Wait for both simulated AI time and the DB insert to complete
+    const [report] = await Promise.all([aiSimPromise.then(() => null).then(async () => await addReportPromise), addReportPromise]);
+
+    if (aiIntervalRef.current) window.clearInterval(aiIntervalRef.current);
+
+    const finalReport = await addReportPromise;
+    if (finalReport) {
+      setCreatedReport(finalReport);
       setStep('result');
       setSuccess(true);
     }
@@ -168,6 +231,10 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
     setErrors({});
     setSuccess(false);
     setCreatedReport(null);
+    if (aiIntervalRef.current) {
+      window.clearInterval(aiIntervalRef.current);
+      aiIntervalRef.current = null;
+    }
     onClose();
   };
 
@@ -319,19 +386,50 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
         )}
 
         {step === 'analyzing' && (
-          <div className="py-12 text-center">
-            <div className="flex items-center justify-center mb-6">
+          <div className="py-8">
+            <div className="flex items-center justify-center mb-4">
               <div className="relative">
                 <Brain className="h-16 w-16 text-accent" />
                 <Loader2 className="h-8 w-8 text-accent absolute -right-2 -bottom-2 animate-spin" />
               </div>
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              {uploading ? 'Uploading Image...' : 'Analyzing Image'}
-            </h3>
-            <p className="text-muted-foreground">
-              {uploading ? 'Uploading your hazard photo...' : 'Our AI is identifying the hazard type and severity...'}
-            </p>
+
+            <div className="max-w-xl mx-auto text-center">
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                {uploading ? 'Uploading Image...' : 'Analyzing with AI'}
+              </h3>
+              <p className="text-muted-foreground mb-4">{uploading ? 'Uploading your hazard photo...' : 'Our AI is analyzing the image and preparing recommendations.'}</p>
+
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden mb-3">
+                <div className="h-2 bg-accent transition-all" style={{ width: `${aiProgress}%` }} />
+              </div>
+
+              <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
+                <div>{aiProgress}%</div>
+                <div>{aiRemainingMs !== null ? `${Math.ceil(aiRemainingMs / 1000)}s remaining` : ''}</div>
+              </div>
+
+              <div className="p-3 bg-surface rounded-md border border-border mb-4 text-sm">
+                <div className="font-medium mb-1">{['Uploading', 'Analyzing', 'Identifying', 'Estimating', 'Summarizing'][aiMessageIndex] || 'Processing'}</div>
+                <div className="text-muted-foreground">{['Uploading image to secure storage', 'Analyzing visual features', 'Identifying hazard type', 'Estimating severity & confidence', 'Composing analysis summary'][aiMessageIndex]}</div>
+              </div>
+
+              <div className="mb-4 text-left">
+                <div className="text-xs text-muted-foreground mb-2">Suggested keywords to include (tap to add):</div>
+                <div className="flex flex-wrap gap-2">
+                  {reportKeywords.slice(0, 8).map((k) => (
+                    <span key={k} className="text-xs px-2 py-1 rounded bg-muted/60 text-foreground">{k}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => { if (aiIntervalRef.current) { window.clearInterval(aiIntervalRef.current); } setStep('form'); }} className="flex-1">Cancel</Button>
+                <Button variant="accent" onClick={() => { /* allow users to wait for completion */ }} className="flex-1" disabled>
+                  <Upload className="h-4 w-4" /> Waiting...
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 

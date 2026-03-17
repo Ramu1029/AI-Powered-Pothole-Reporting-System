@@ -1,41 +1,80 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
+import { User, UserRole } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  signup: (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole,
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
-  updatePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (
+    email: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function fetchUserProfile(userId: string): Promise<User | null> {
   const [profileRes, roleRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-    supabase.from('user_roles').select('*').eq('user_id', userId).maybeSingle(),
+    supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("user_roles").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
   if (profileRes.error || !profileRes.data) {
-    console.error('Profile fetch error:', profileRes.error);
+    console.error("Profile fetch error:", profileRes.error);
     return null;
   }
 
   const profile = profileRes.data;
-  const roleData = roleRes.data;
+  let roleData = roleRes.data;
+
+  // If role row is missing, try to recover from auth user metadata and create the role entry.
+  if (!roleData) {
+    try {
+      const { data: authUserResp } = await supabase.auth.getUser();
+      const metaRole = (authUserResp?.user?.user_metadata as any)?.role as UserRole | undefined;
+      if (metaRole) {
+        const { error: insertErr } = await supabase.from('user_roles').insert({
+          user_id: userId,
+          role: metaRole,
+          is_approved: metaRole === 'municipal_staff' ? false : true,
+        });
+        if (insertErr) console.error('Recovered role insert failed:', insertErr.message);
+        const { data: created } = await supabase.from('user_roles').select('*').eq('user_id', userId).maybeSingle();
+        roleData = created;
+      }
+    } catch (err) {
+      console.error('Error recovering user role from metadata:', err);
+    }
+  }
 
   return {
     id: userId,
     email: profile.email,
     name: profile.name,
-    role: (roleData?.role as UserRole) || 'citizen',
+    role: (roleData?.role as UserRole) || "citizen",
     region: profile.region || undefined,
     phone: profile.phone || undefined,
     city: profile.city || undefined,
@@ -56,14 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let initialSessionHandled = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('Auth state change:', event, !!newSession);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log("Auth state change:", event, !!newSession);
       setSession(newSession);
       if (newSession?.user) {
         // Use setTimeout to avoid Supabase client deadlock
         setTimeout(async () => {
           const profile = await fetchUserProfile(newSession.user.id);
-          console.log('Profile fetched:', !!profile, profile?.role);
+          console.log("Profile fetched:", !!profile, profile?.role);
           setUser(profile);
           setIsLoading(false);
         }, 0);
@@ -73,25 +114,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      if (initialSessionHandled) return;
-      initialSessionHandled = true;
-      setSession(currentSession);
-      if (currentSession?.user) {
-        const profile = await fetchUserProfile(currentSession.user.id);
-        setUser(profile);
-      }
-      setIsLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session: currentSession } }) => {
+        if (initialSessionHandled) return;
+        initialSessionHandled = true;
+        setSession(currentSession);
+        if (currentSession?.user) {
+          const profile = await fetchUserProfile(currentSession.user.id);
+          setUser(profile);
+        }
+        setIsLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
-      if (error.message.includes('Email not confirmed')) {
-        return { success: false, error: 'Please verify your email address before signing in.' };
+      if (error.message.includes("Email not confirmed")) {
+        return {
+          success: false,
+          error: "Please verify your email address before signing in.",
+        };
       }
       return { success: false, error: error.message };
     }
@@ -99,43 +148,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signup = useCallback(
-  async (email: string, password: string, name: string, role: UserRole) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { name },
-      },
-    });
-
-    if (error) return { success: false, error: error.message };
-
-    if (data.user) {
-      // Auto-assign admin if email matches
-      const assignedRole =
-        email === "brahmi7711@gmail.com" ? "admin" : role;
-
-      // Insert into profiles table
-      await supabase.from("profiles").insert({
-        user_id: data.user.id,
+    async (email: string, password: string, name: string, role: UserRole) => {
+      const { data, error } = await supabase.auth.signUp({
         email,
-        name,
-        is_verified: true,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { name, role },
+        },
       });
 
-      // Insert into user_roles table
-      await supabase.from("user_roles").insert({
-        user_id: data.user.id,
-        role: assignedRole,
-        is_approved: true,
-      });
-    }
+      if (error) return { success: false, error: error.message };
 
-    return { success: true };
-  },
-  []
-);
+      if (data.user) {
+        // Auto-assign admin if email matches
+        const assignedRole = email === "brahmi7711@gmail.com" ? "admin" : role;
+
+        // Insert into profiles table
+        const { error: profileError } = await supabase.from("profiles").insert({
+          user_id: data.user.id,
+          email,
+          name,
+          is_verified: true,
+        });
+        if (profileError) console.error('Profile insert failed during signup:', profileError.message);
+
+        // Insert into user_roles table
+        // municipal_staff accounts require admin approval; other roles are approved by default
+        const { error: roleInsertError } = await supabase.from("user_roles").insert({
+          user_id: data.user.id,
+          role: assignedRole,
+          is_approved: assignedRole === "municipal_staff" ? false : true,
+        });
+        if (roleInsertError) console.error('Role insert failed during signup:', roleInsertError.message);
+
+        // If registering as admin, attempt to sign in immediately so the user can proceed
+        // (if the Supabase project requires email confirmation this may still fail)
+        if (assignedRole === "admin") {
+          try {
+            const { error: signInError } =
+              await supabase.auth.signInWithPassword({ email, password });
+            if (signInError) {
+              console.log("Admin auto sign-in failed:", signInError.message);
+            }
+          } catch (err) {
+            console.error("Admin auto sign-in exception:", err);
+          }
+        }
+      }
+
+      return { success: true };
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -158,7 +223,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, isAuthenticated: !!session, isLoading, login, signup, logout, resetPassword, updatePassword }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isAuthenticated: !!session,
+        isLoading,
+        login,
+        signup,
+        logout,
+        resetPassword,
+        updatePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -167,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

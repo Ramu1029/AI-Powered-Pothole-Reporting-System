@@ -169,6 +169,14 @@ export function generateAIAnalysis(imageContext?: string): AIAnalysis {
   };
 }
 
+// Common keywords that users often include while reporting hazards
+export const reportKeywords: string[] = [
+  'pothole', 'crack', 'flooding', 'debris', 'damaged signage', 'broken barrier',
+  'uneven surface', 'erosion', 'standing water', 'blocked drain', 'sinkhole',
+  'collapsed', 'obstruction', 'exposed aggregate', 'subsidence', 'edge drop', 'visibility',
+  'icy', 'oil spill', 'traffic hazard'
+];
+
 // Mock Hazard Reports
 export const mockHazardReports: HazardReport[] = [
   {

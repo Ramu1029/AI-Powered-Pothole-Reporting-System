@@ -1,41 +1,58 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FormMessage } from '@/components/common/FormMessage';
-import { Shield, User, Wrench } from 'lucide-react';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRole } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormMessage } from "@/components/common/FormMessage";
+import { Shield, User, Wrench } from "lucide-react";
 
 export default function Signup() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('citizen');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("citizen");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
-    if (!name.trim()) { setError('Full name is required'); return; }
-    if (!email.trim()) { setError('Email address is required'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!name.trim()) {
+      setError("Full name is required");
+      return;
+    }
+    if (!email.trim()) {
+      setError("Email address is required");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
 
     setIsLoading(true);
     const result = await signup(email, password, name, role);
     setIsLoading(false);
 
     if (result.success) {
-      setSuccess('Account created successfully. Please check your email to verify your account before signing in.');
+      setSuccess(
+        "Account created successfully. Please check your email to verify your account before signing in.",
+      );
     } else {
-      setError(result.error || 'Signup failed');
+      setError(result.error || "Signup failed");
     }
   };
 
@@ -50,7 +67,9 @@ export default function Signup() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground/10">
               <Shield className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold text-primary-foreground">RoadWatch</span>
+            <span className="text-xl font-semibold text-primary-foreground">
+              RoadWatch
+            </span>
           </div>
         </div>
         <div className="space-y-6">
@@ -58,7 +77,8 @@ export default function Signup() {
             Join the Community
           </h1>
           <p className="text-primary-foreground/70 text-lg max-w-md">
-            Create your account to start reporting road hazards and help improve infrastructure in your area.
+            Create your account to start reporting road hazards and help improve
+            infrastructure in your area.
           </p>
         </div>
         <div className="text-primary-foreground/50 text-sm">
@@ -72,12 +92,18 @@ export default function Signup() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <Shield className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold text-foreground">RoadWatch</span>
+            <span className="text-xl font-semibold text-foreground">
+              RoadWatch
+            </span>
           </div>
 
           <div className="text-center lg:text-left">
-            <h2 className="text-2xl font-semibold text-foreground">Create an account</h2>
-            <p className="mt-2 text-muted-foreground">Fill in your details to get started</p>
+            <h2 className="text-2xl font-semibold text-foreground">
+              Create an account
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              Fill in your details to get started
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -86,22 +112,45 @@ export default function Signup() {
 
             <div className="space-y-2">
               <Label htmlFor="name">Full name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" className="h-11" />
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                className="h-11"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-11" />
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="h-11"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="h-11" />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="h-11"
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Account type</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+              <Select
+                value={role}
+                onValueChange={(v) => setRole(v as UserRole)}
+              >
                 <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
@@ -118,21 +167,40 @@ export default function Signup() {
                       <span>Municipal Staff</span>
                     </div>
                   </SelectItem>
+                  <SelectItem value="admin">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      <span>Administrator</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              {role === 'municipal_staff' && (
-                <p className="text-xs text-muted-foreground">Municipal staff accounts require admin approval before access is granted.</p>
+              {role === "municipal_staff" && (
+                <p className="text-xs text-muted-foreground">
+                  Municipal staff accounts require admin approval before access
+                  is granted.
+                </p>
+              )}
+              {role === "admin" && (
+                <p className="text-xs text-muted-foreground">
+                  Administrator accounts are approved immediately.
+                </p>
               )}
             </div>
 
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-primary hover:underline font-medium"
+            >
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
