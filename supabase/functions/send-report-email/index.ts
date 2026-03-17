@@ -139,6 +139,14 @@ serve(async (req) => {
     const result = await res.json();
 
     if (!res.ok) {
+      // Resend free tier: can only send to account owner's email
+      if (res.status === 403 && result?.message?.includes('testing emails')) {
+        console.warn(`Resend free tier: skipped email to ${body.to}. Verify a domain at resend.com/domains to send to any recipient.`);
+        return new Response(JSON.stringify({ success: true, skipped: true, reason: 'free_tier_restriction', message: 'Email skipped: Resend free tier only allows sending to the account owner email. Verify a domain to unlock full sending.' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       console.error('Resend API error:', result);
       return new Response(JSON.stringify({ success: false, error: result }), {
         status: res.status,
