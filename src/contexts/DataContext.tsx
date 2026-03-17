@@ -221,7 +221,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [users]);
 
   const updateReportStatus = useCallback(async (reportId: string, status: ReportStatus, remark?: string) => {
-    // Get current report to append remark
     const current = reports.find(r => r.id === reportId);
     const updates: any = { status };
 
@@ -235,6 +234,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .from('hazard_reports' as any)
       .update(updates)
       .eq('id', reportId);
+
+    // Notify the citizen about status change
+    if (current) {
+      // Fetch citizen email from profiles if not in users list
+      const { data: citizenProfile } = await supabase
+        .from('profiles')
+        .select('email, name')
+        .eq('user_id', current.reportedBy)
+        .maybeSingle();
+
+      if (citizenProfile) {
+        sendReportEmail({
+          to: citizenProfile.email,
+          subject: `Report Update: "${current.title}" is now ${status.replace(/_/g, ' ')}`,
+          type: 'status_changed',
+          reportTitle: current.title,
+          reportId,
+          recipientName: citizenProfile.name || current.reporterName,
+          newStatus: status,
+        });
+      }
+
+      // Notify assigned staff too if there is one
+      if (current.assignedTo) {
+        const { data: staffProfile } = await supabase
+          .from('profiles')
+          .select('email, name')
+          .eq('user_id', current.assignedTo)
+          .maybeSingle();
+
+        if (staffProfile) {
+          sendReportEmail({
+            to: staffProfile.email,
+            subject: `Report Update: "${current.title}" status changed to ${status.replace(/_/g, ' ')}`,
+            type: 'status_changed',
+            reportTitle: current.title,
+            reportId,
+            recipientName: staffProfile.name || current.assignedStaffName || 'Staff',
+            newStatus: status,
+          });
+        }
+      }
+    }
   }, [reports]);
 
   const assignReport = useCallback(async (reportId: string, staffId: string, staffName: string) => {
