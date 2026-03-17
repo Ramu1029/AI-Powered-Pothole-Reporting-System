@@ -198,8 +198,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     const newReport = mapDbReport(data);
+
+    // Notify admin(s) about new report
+    if (users.length > 0) {
+      const admins = users.filter(u => u.role === 'admin');
+      for (const admin of admins) {
+        sendReportEmail({
+          to: admin.email,
+          subject: `New Hazard Report: ${newReport.title}`,
+          type: 'report_created',
+          reportTitle: newReport.title,
+          reportId: newReport.id,
+          recipientName: admin.name,
+          reporterName: reportData.reporterName,
+          description: reportData.description,
+          location: reportData.location.address,
+        });
+      }
+    }
+
     return newReport;
-  }, []);
+  }, [users]);
 
   const updateReportStatus = useCallback(async (reportId: string, status: ReportStatus, remark?: string) => {
     // Get current report to append remark
