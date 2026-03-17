@@ -149,11 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(
     async (email: string, password: string, name: string, role: UserRole) => {
-<<<<<<< HEAD
       const { data, error } = await supabase.auth.signUp({
-=======
-      const { error } = await supabase.auth.signUp({
->>>>>>> 3afe5cd41dbb0fb0c975bfc7a8c5f27699ea88c8
         email,
         password,
         options: {
@@ -163,13 +159,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) return { success: false, error: error.message };
-<<<<<<< HEAD
 
       if (data.user) {
-        // Auto-assign admin if email matches
         const assignedRole = email === "brahmi7711@gmail.com" ? "admin" : role;
 
-        // Insert into profiles table
         const { error: profileError } = await supabase.from("profiles").insert({
           user_id: data.user.id,
           email,
@@ -178,8 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (profileError) console.error('Profile insert failed during signup:', profileError.message);
 
-        // Insert into user_roles table
-        // municipal_staff accounts require admin approval; other roles are approved by default
         const { error: roleInsertError } = await supabase.from("user_roles").insert({
           user_id: data.user.id,
           role: assignedRole,
@@ -187,8 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (roleInsertError) console.error('Role insert failed during signup:', roleInsertError.message);
 
-        // If registering as admin, attempt to sign in immediately so the user can proceed
-        // (if the Supabase project requires email confirmation this may still fail)
         if (assignedRole === "admin") {
           try {
             const { error: signInError } =
@@ -205,11 +194,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     },
     [],
-=======
-      return { success: true };
-    },
-    []
->>>>>>> 3afe5cd41dbb0fb0c975bfc7a8c5f27699ea88c8
   );
 
   const logout = useCallback(async () => {
