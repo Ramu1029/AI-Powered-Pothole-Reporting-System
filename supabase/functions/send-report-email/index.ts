@@ -98,8 +98,18 @@ function getEmailHtml(data: EmailRequest): string {
     `;
   }
 
+  // Add routing info banner showing original intended recipient
+  const routingBanner = `
+    <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 0;">
+      <p style="margin: 0; color: #92400e; font-size: 13px; font-weight: 600;">📬 Email Routing Info (Dev Mode)</p>
+      <p style="margin: 4px 0 0; color: #92400e; font-size: 13px;"><strong>Originally intended for:</strong> ${data.to} (${data.recipientName})</p>
+      <p style="margin: 4px 0 0; color: #92400e; font-size: 13px;"><strong>Triggered by:</strong> ${data.type === 'report_created' ? 'Citizen submitted a report' : data.type === 'report_assigned' ? 'Admin assigned a report' : 'Status update action'}</p>
+    </div>
+  `;
+
   return `
     <div style="${baseStyle}">
+      ${routingBanner}
       ${content}
       <div style="padding: 20px 32px; background: #f8fafc; text-align: center; border-top: 1px solid #e2e8f0;">
         <p style="color: #94a3b8; font-size: 12px; margin: 0;">Sentinel Road Hazard Management System</p>
