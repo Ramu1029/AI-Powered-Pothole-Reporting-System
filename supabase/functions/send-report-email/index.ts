@@ -132,6 +132,9 @@ serve(async (req) => {
     const body: EmailRequest = await req.json();
     const html = getEmailHtml(body);
 
+    // Dev mode: route all emails to account owner due to Resend free tier
+    const DEV_RECIPIENT = 'mamidiram0921@gmail.com';
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -140,8 +143,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'Sentinel Road <onboarding@resend.dev>',
-        to: [body.to],
-        subject: body.subject,
+        to: [DEV_RECIPIENT],
+        subject: `[To: ${body.recipientName}] ${body.subject}`,
         html,
       }),
     });
