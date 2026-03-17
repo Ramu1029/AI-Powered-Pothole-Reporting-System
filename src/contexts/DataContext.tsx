@@ -3,6 +3,7 @@ import { HazardReport, User, Region, ReportStatus, HazardType, Severity } from '
 import { generateAIAnalysis } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { sendReportEmail } from '@/utils/emailNotifications';
 
 interface DataContextType {
   reports: HazardReport[];
@@ -197,11 +198,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     const newReport = mapDbReport(data);
+
+    // Notify admin(s) about new report
+    if (users.length > 0) {
+      const admins = users.filter(u => u.role === 'admin');
+      for (const admin of admins) {
+        sendReportEmail({
+          to: admin.email,
+          subject: `New Hazard Report: ${newReport.title}`,
+          type: 'report_created',
+          reportTitle: newReport.title,
+          reportId: newReport.id,
+          recipientName: admin.name,
+          reporterName: reportData.reporterName,
+          description: reportData.description,
+          location: reportData.location.address,
+        });
+      }
+    }
+
     return newReport;
-  }, []);
+  }, [users]);
 
   const updateReportStatus = useCallback(async (reportId: string, status: ReportStatus, remark?: string) => {
-    // Get current report to append remark
     const current = reports.find(r => r.id === reportId);
     const updates: any = { status };
 
@@ -215,9 +234,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .from('hazard_reports' as any)
       .update(updates)
       .eq('id', reportId);
+
+    // Notify the citizen about status change
+    if (current) {
+      // Fetch citizen email from profiles if not in users list
+      const { data: citizenProfile } = await supabase
+        .from('profiles')
+        .select('email, name')
+        .eq('user_id', current.reportedBy)
+        .maybeSingle();
+
+      if (citizenProfile) {
+        sendReportEmail({
+          to: citizenProfile.email,
+          subject: `Report Update: "${current.title}" is now ${status.replace(/_/g, ' ')}`,
+          type: 'status_changed',
+          reportTitle: current.title,
+          reportId,
+          recipientName: citizenProfile.name || current.reporterName,
+          newStatus: status,
+        });
+      }
+
+      // Notify assigned staff too if there is one
+      if (current.assignedTo) {
+        const { data: staffProfile } = await supabase
+          .from('profiles')
+          .select('email, name')
+          .eq('user_id', current.assignedTo)
+          .maybeSingle();
+
+        if (staffProfile) {
+          sendReportEmail({
+            to: staffProfile.email,
+            subject: `Report Update: "${current.title}" status changed to ${status.replace(/_/g, ' ')}`,
+            type: 'status_changed',
+            reportTitle: current.title,
+            reportId,
+            recipientName: staffProfile.name || current.assignedStaffName || 'Staff',
+            newStatus: status,
+          });
+        }
+      }
+    }
   }, [reports]);
 
   const assignReport = useCallback(async (reportId: string, staffId: string, staffName: string) => {
+    const report = reports.find(r => r.id === reportId);
     await supabase
       .from('hazard_reports' as any)
       .update({
@@ -226,7 +289,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
         status: 'under_review',
       } as any)
       .eq('id', reportId);
-  }, []);
+
+    // Email the assigned staff member
+    const staffUser = users.find(u => u.id === staffId);
+    if (staffUser && report) {
+      sendReportEmail({
+        to: staffUser.email,
+        subject: `Report Assigned: ${report.title}`,
+        type: 'report_assigned',
+        reportTitle: report.title,
+        reportId,
+        recipientName: staffUser.name,
+        description: report.description,
+        location: report.location.address,
+      });
+    }
+
+    // Also notify the citizen who reported
+    if (report) {
+      const citizen = users.find(u => u.id === report.reportedBy);
+      const citizenEmail = citizen?.email;
+      // If we don't have the citizen in users list, try profile lookup
+      if (citizenEmail) {
+        sendReportEmail({
+          to: citizenEmail,
+          subject: `Your Report "${report.title}" is Under Review`,
+          type: 'status_changed',
+          reportTitle: report.title,
+          reportId,
+          recipientName: report.reporterName,
+          newStatus: 'under_review',
+        });
+      }
+    }
+  }, [reports, users]);
 
   const addRemark = useCallback(async (reportId: string, remark: string) => {
     const current = reports.find(r => r.id === reportId);
