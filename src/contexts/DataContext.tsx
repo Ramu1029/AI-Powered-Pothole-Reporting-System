@@ -3,6 +3,7 @@ import { HazardReport, User, Region, ReportStatus, HazardType, Severity } from '
 import { generateAIAnalysis } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { sendReportEmail } from '@/utils/emailNotifications';
 
 interface DataContextType {
   reports: HazardReport[];
