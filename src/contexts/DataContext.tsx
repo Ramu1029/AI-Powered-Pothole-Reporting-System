@@ -238,6 +238,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [reports]);
 
   const assignReport = useCallback(async (reportId: string, staffId: string, staffName: string) => {
+    const report = reports.find(r => r.id === reportId);
     await supabase
       .from('hazard_reports' as any)
       .update({
@@ -246,7 +247,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
         status: 'under_review',
       } as any)
       .eq('id', reportId);
-  }, []);
+
+    // Email the assigned staff member
+    const staffUser = users.find(u => u.id === staffId);
+    if (staffUser && report) {
+      sendReportEmail({
+        to: staffUser.email,
+        subject: `Report Assigned: ${report.title}`,
+        type: 'report_assigned',
+        reportTitle: report.title,
+        reportId,
+        recipientName: staffUser.name,
+        description: report.description,
+        location: report.location.address,
+      });
+    }
+
+    // Also notify the citizen who reported
+    if (report) {
+      const citizen = users.find(u => u.id === report.reportedBy);
+      const citizenEmail = citizen?.email;
+      // If we don't have the citizen in users list, try profile lookup
+      if (citizenEmail) {
+        sendReportEmail({
+          to: citizenEmail,
+          subject: `Your Report "${report.title}" is Under Review`,
+          type: 'status_changed',
+          reportTitle: report.title,
+          reportId,
+          recipientName: report.reporterName,
+          newStatus: 'under_review',
+        });
+      }
+    }
+  }, [reports, users]);
 
   const addRemark = useCallback(async (reportId: string, remark: string) => {
     const current = reports.find(r => r.id === reportId);
