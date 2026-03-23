@@ -392,7 +392,7 @@ export default function AdminDashboard() {
                 </h3>
                 <div className="space-y-3">
                   {pendingStaff.map(staff => (
-                    <div key={staff.id} className="flex items-start justify-between p-4 bg-muted/50 rounded-lg gap-4">
+                    <div key={staff.id} className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-4 bg-muted/50 rounded-lg gap-3 sm:gap-4">
                       <div className="space-y-2 min-w-0">
                         <div>
                           <p className="font-medium text-foreground">{staff.name}</p>
