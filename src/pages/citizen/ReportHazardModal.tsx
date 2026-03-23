@@ -332,7 +332,7 @@ export function ReportHazardModal({ open, onClose }: ReportHazardModalProps) {
             {/* GPS Location */}
             <div className="space-y-2">
               <Label>GPS Coordinates</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   type="button"
                   variant="outline"
