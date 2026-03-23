@@ -508,7 +508,6 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Mobile card view for reports */}
             <div className="sm:hidden space-y-3">
               {filteredReports.length === 0 ? (
