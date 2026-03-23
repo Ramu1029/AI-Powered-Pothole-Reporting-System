@@ -428,7 +428,7 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       </div>
-                      <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)} className="shrink-0">
+                      <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)} className="shrink-0 w-full sm:w-auto">
                         <CheckCircle className="h-4 w-4" />
                         Approve
                       </Button>
