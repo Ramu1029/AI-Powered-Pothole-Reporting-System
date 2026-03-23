@@ -192,7 +192,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Administrator Dashboard</h1>
           <p className="text-muted-foreground mt-1">System overview and management</p>
