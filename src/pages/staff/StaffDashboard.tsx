@@ -245,16 +245,16 @@ export default function StaffDashboard() {
                   key={report.id}
                   className="bg-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                     {report.imageUrl && (
                       <img
                         src={report.imageUrl}
                         alt={report.title}
-                        className="w-20 h-20 rounded-lg object-cover border border-border shrink-0"
+                        className="w-full sm:w-20 h-40 sm:h-20 rounded-lg object-cover border border-border shrink-0"
                       />
                     )}
                     <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                         <div>
                           <h3 className="font-medium text-foreground">{report.title}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{report.description}</p>
@@ -265,7 +265,7 @@ export default function StaffDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {report.location.district}, {report.location.state}
