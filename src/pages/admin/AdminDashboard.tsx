@@ -385,7 +385,7 @@ export default function AdminDashboard() {
 
           <TabsContent value="staff" className="space-y-6">
             {pendingStaff.length > 0 && (
-              <div className="bg-card rounded-lg border border-border p-6">
+              <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
                   <UserCheck className="h-4 w-4" />
                   Pending Staff Approvals
