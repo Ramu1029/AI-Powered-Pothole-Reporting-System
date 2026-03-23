@@ -693,7 +693,7 @@ export default function AdminDashboard() {
 
           {viewingReport && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg overflow-hidden border border-border">
                   <img src={viewingReport.imageUrl} alt={viewingReport.title} className="w-full aspect-video object-cover" />
                 </div>
