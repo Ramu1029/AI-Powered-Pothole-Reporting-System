@@ -336,7 +336,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by Hazard Type</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportsByType} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
