@@ -438,7 +438,34 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            {/* Mobile card view for staff */}
+            <div className="sm:hidden space-y-3">
+              {users.filter(u => u.role === 'municipal_staff').map(staff => (
+                <div key={staff.id} className="bg-card rounded-lg border border-border p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{staff.name}</p>
+                    {staff.isApproved ? (
+                      <span className="inline-flex items-center gap-1 text-success text-xs">
+                        <CheckCircle className="h-3 w-3" />
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-warning text-xs">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{staff.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {staff.state ? `${staff.mandal || ''}, ${staff.district || ''}, ${staff.state}` : '-'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{new Date(staff.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block bg-card rounded-lg border border-border overflow-hidden">
               <table className="data-table">
                 <thead>
                   <tr>
