@@ -167,7 +167,7 @@ export default function StaffDashboard() {
         {/* Profile Info Card */}
         {isProfileComplete && (
           <div className="bg-card rounded-lg border border-border p-4">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <span className="text-foreground">{user.phone}</span>
