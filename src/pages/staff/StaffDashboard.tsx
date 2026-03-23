@@ -152,8 +152,8 @@ export default function StaffDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
-        <div className="flex items-start justify-between">
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
             <p className="text-muted-foreground mt-1">
