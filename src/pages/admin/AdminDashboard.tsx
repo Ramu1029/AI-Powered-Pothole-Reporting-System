@@ -398,7 +398,7 @@ export default function AdminDashboard() {
                           <p className="font-medium text-foreground">{staff.name}</p>
                           <p className="text-sm text-muted-foreground">{staff.email}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
                           {staff.phone && (
                             <div>
                               <span className="text-muted-foreground">Phone: </span>
