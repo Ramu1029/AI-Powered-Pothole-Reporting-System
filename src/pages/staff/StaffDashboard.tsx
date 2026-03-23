@@ -290,7 +290,7 @@ export default function StaffDashboard() {
                     <Button
                       size="sm"
                       variant="accent"
-                      className="shrink-0"
+                      className="shrink-0 w-full sm:w-auto"
                       onClick={() => setSelectedReport(report)}
                     >
                       Review
