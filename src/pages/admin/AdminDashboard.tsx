@@ -312,14 +312,14 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="analytics">
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Analytics
+          <TabsList className="w-full sm:w-auto flex">
+            <TabsTrigger value="analytics" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <LayoutDashboard className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="staff">
-              <Users className="h-4 w-4 mr-2" />
-              Staff Management
+            <TabsTrigger value="staff" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Staff</span>
               {pendingStaff.length > 0 && (
                 <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
                   {pendingStaff.length}
