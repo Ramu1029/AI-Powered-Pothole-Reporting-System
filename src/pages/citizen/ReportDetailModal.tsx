@@ -108,7 +108,7 @@ export function ReportDetailModal({ report, onClose }: ReportDetailModalProps) {
               <span className="text-sm font-medium text-foreground">AI Analysis</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">Hazard Type</p>
                 <p className="font-medium text-foreground">

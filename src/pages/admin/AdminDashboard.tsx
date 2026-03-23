@@ -326,9 +326,9 @@ export default function AdminDashboard() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="reports">
-              <FileText className="h-4 w-4 mr-2" />
-              All Reports
+            <TabsTrigger value="reports" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <FileText className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
           </TabsList>
 
