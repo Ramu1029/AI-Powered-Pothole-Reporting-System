@@ -349,9 +349,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-6">
+              <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by Severity</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={reportsBySeverity} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
