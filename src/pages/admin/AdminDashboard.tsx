@@ -509,6 +509,53 @@ export default function AdminDashboard() {
 
           <TabsContent value="reports" className="space-y-6">
             <div className="bg-card rounded-lg border border-border overflow-hidden">
+            {/* Mobile card view for reports */}
+            <div className="sm:hidden space-y-3">
+              {filteredReports.length === 0 ? (
+                <div className="bg-card rounded-lg border border-border p-8 text-center text-muted-foreground">
+                  No reports found for selected filters
+                </div>
+              ) : (
+                filteredReports.map(report => (
+                  <div key={report.id} className="bg-card rounded-lg border border-border p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground line-clamp-1">{report.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <SeverityBadge severity={report.aiAnalysis.severity} />
+                        <StatusBadge status={report.status} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {report.location.district || '-'}, {report.location.state || ''}
+                    </div>
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Assigned: </span>
+                      {report.assignedStaffName ? (
+                        <span className="font-medium text-foreground">{report.assignedStaffName}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Unassigned</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setViewingReport(report)}>View</Button>
+                      {report.status !== 'resolved' && report.status !== 'rejected' && (
+                        <Button size="sm" variant="accent" className="flex-1" onClick={() => openAssignModal(report)}>
+                          <UserPlus className="h-3 w-3 mr-1" /> Assign
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block bg-card rounded-lg border border-border overflow-hidden">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -555,21 +602,10 @@ export default function AdminDashboard() {
                         </td>
                         <td>
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setViewingReport(report)}
-                            >
-                              View
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setViewingReport(report)}>View</Button>
                             {report.status !== 'resolved' && report.status !== 'rejected' && (
-                              <Button
-                                size="sm"
-                                variant="accent"
-                                onClick={() => openAssignModal(report)}
-                              >
-                                <UserPlus className="h-3 w-3 mr-1" />
-                                Assign
+                              <Button size="sm" variant="accent" onClick={() => openAssignModal(report)}>
+                                <UserPlus className="h-3 w-3 mr-1" /> Assign
                               </Button>
                             )}
                           </div>
