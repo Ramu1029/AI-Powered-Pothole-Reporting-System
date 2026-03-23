@@ -192,7 +192,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Administrator Dashboard</h1>
           <p className="text-muted-foreground mt-1">System overview and management</p>
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -312,31 +312,31 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="analytics">
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Analytics
+          <TabsList className="w-full sm:w-auto flex">
+            <TabsTrigger value="analytics" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <LayoutDashboard className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="staff">
-              <Users className="h-4 w-4 mr-2" />
-              Staff Management
+            <TabsTrigger value="staff" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Staff</span>
               {pendingStaff.length > 0 && (
                 <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-destructive-foreground">
                   {pendingStaff.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="reports">
-              <FileText className="h-4 w-4 mr-2" />
-              All Reports
+            <TabsTrigger value="reports" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <FileText className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-card rounded-lg border border-border p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by Hazard Type</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportsByType} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -349,9 +349,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-6">
+              <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by Severity</h3>
-                <div className="h-[300px]">
+                <div className="h-[250px] sm:h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={reportsBySeverity} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
@@ -366,9 +366,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-6 lg:col-span-2">
+              <div className="bg-card rounded-lg border border-border p-4 sm:p-6 lg:col-span-2">
                 <h3 className="text-sm font-medium text-foreground mb-4">Reports by District</h3>
-                <div className="h-[250px]">
+                <div className="h-[200px] sm:h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportsByDistrict}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -385,20 +385,20 @@ export default function AdminDashboard() {
 
           <TabsContent value="staff" className="space-y-6">
             {pendingStaff.length > 0 && (
-              <div className="bg-card rounded-lg border border-border p-6">
+              <div className="bg-card rounded-lg border border-border p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
                   <UserCheck className="h-4 w-4" />
                   Pending Staff Approvals
                 </h3>
                 <div className="space-y-3">
                   {pendingStaff.map(staff => (
-                    <div key={staff.id} className="flex items-start justify-between p-4 bg-muted/50 rounded-lg gap-4">
+                    <div key={staff.id} className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-4 bg-muted/50 rounded-lg gap-3 sm:gap-4">
                       <div className="space-y-2 min-w-0">
                         <div>
                           <p className="font-medium text-foreground">{staff.name}</p>
                           <p className="text-sm text-muted-foreground">{staff.email}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
                           {staff.phone && (
                             <div>
                               <span className="text-muted-foreground">Phone: </span>
@@ -428,7 +428,7 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       </div>
-                      <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)} className="shrink-0">
+                      <Button variant="accent" size="sm" onClick={() => handleApproveStaff(staff.id)} className="shrink-0 w-full sm:w-auto">
                         <CheckCircle className="h-4 w-4" />
                         Approve
                       </Button>
@@ -438,7 +438,34 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            {/* Mobile card view for staff */}
+            <div className="sm:hidden space-y-3">
+              {users.filter(u => u.role === 'municipal_staff').map(staff => (
+                <div key={staff.id} className="bg-card rounded-lg border border-border p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{staff.name}</p>
+                    {staff.isApproved ? (
+                      <span className="inline-flex items-center gap-1 text-success text-xs">
+                        <CheckCircle className="h-3 w-3" />
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-warning text-xs">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{staff.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {staff.state ? `${staff.mandal || ''}, ${staff.district || ''}, ${staff.state}` : '-'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{new Date(staff.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block bg-card rounded-lg border border-border overflow-hidden">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -481,7 +508,53 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            {/* Mobile card view for reports */}
+            <div className="sm:hidden space-y-3">
+              {filteredReports.length === 0 ? (
+                <div className="bg-card rounded-lg border border-border p-8 text-center text-muted-foreground">
+                  No reports found for selected filters
+                </div>
+              ) : (
+                filteredReports.map(report => (
+                  <div key={report.id} className="bg-card rounded-lg border border-border p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground line-clamp-1">{report.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <SeverityBadge severity={report.aiAnalysis.severity} />
+                        <StatusBadge status={report.status} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {report.location.district || '-'}, {report.location.state || ''}
+                    </div>
+                    <div className="text-xs">
+                      <span className="text-muted-foreground">Assigned: </span>
+                      {report.assignedStaffName ? (
+                        <span className="font-medium text-foreground">{report.assignedStaffName}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Unassigned</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setViewingReport(report)}>View</Button>
+                      {report.status !== 'resolved' && report.status !== 'rejected' && (
+                        <Button size="sm" variant="accent" className="flex-1" onClick={() => openAssignModal(report)}>
+                          <UserPlus className="h-3 w-3 mr-1" /> Assign
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block bg-card rounded-lg border border-border overflow-hidden">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -528,21 +601,10 @@ export default function AdminDashboard() {
                         </td>
                         <td>
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setViewingReport(report)}
-                            >
-                              View
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setViewingReport(report)}>View</Button>
                             {report.status !== 'resolved' && report.status !== 'rejected' && (
-                              <Button
-                                size="sm"
-                                variant="accent"
-                                onClick={() => openAssignModal(report)}
-                              >
-                                <UserPlus className="h-3 w-3 mr-1" />
-                                Assign
+                              <Button size="sm" variant="accent" onClick={() => openAssignModal(report)}>
+                                <UserPlus className="h-3 w-3 mr-1" /> Assign
                               </Button>
                             )}
                           </div>
@@ -631,7 +693,7 @@ export default function AdminDashboard() {
 
           {viewingReport && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg overflow-hidden border border-border">
                   <img src={viewingReport.imageUrl} alt={viewingReport.title} className="w-full aspect-video object-cover" />
                 </div>

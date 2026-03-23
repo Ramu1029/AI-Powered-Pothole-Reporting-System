@@ -152,8 +152,8 @@ export default function StaffDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
-        <div className="flex items-start justify-between">
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Staff Dashboard</h1>
             <p className="text-muted-foreground mt-1">
@@ -167,7 +167,7 @@ export default function StaffDashboard() {
         {/* Profile Info Card */}
         {isProfileComplete && (
           <div className="bg-card rounded-lg border border-border p-4">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <span className="text-foreground">{user.phone}</span>
@@ -181,7 +181,7 @@ export default function StaffDashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -245,16 +245,16 @@ export default function StaffDashboard() {
                   key={report.id}
                   className="bg-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                     {report.imageUrl && (
                       <img
                         src={report.imageUrl}
                         alt={report.title}
-                        className="w-20 h-20 rounded-lg object-cover border border-border shrink-0"
+                        className="w-full sm:w-20 h-40 sm:h-20 rounded-lg object-cover border border-border shrink-0"
                       />
                     )}
                     <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                         <div>
                           <h3 className="font-medium text-foreground">{report.title}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{report.description}</p>
@@ -265,7 +265,7 @@ export default function StaffDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {report.location.district}, {report.location.state}
@@ -290,7 +290,7 @@ export default function StaffDashboard() {
                     <Button
                       size="sm"
                       variant="accent"
-                      className="shrink-0"
+                      className="shrink-0 w-full sm:w-auto"
                       onClick={() => setSelectedReport(report)}
                     >
                       Review
@@ -313,7 +313,7 @@ export default function StaffDashboard() {
           {selectedReport && (
             <div className="space-y-6">
               {/* Report Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-lg overflow-hidden border border-border">
                   <img src={selectedReport.imageUrl} alt={selectedReport.title} className="w-full aspect-video object-cover" />
                 </div>
