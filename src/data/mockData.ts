@@ -101,70 +101,186 @@ export const mockRegions: Region[] = [
   { id: 'reg-005', name: 'Harbor District', code: 'HBD', staffCount: 1, activeReports: 4 },
 ];
 
-// AI Analysis Generator
-export function generateAIAnalysis(imageContext?: string): AIAnalysis {
-  const hazardTypes: HazardType[] = ['pothole', 'crack', 'flooding', 'debris', 'damaged_signage', 'broken_barrier', 'uneven_surface', 'erosion'];
-  const severities: Severity[] = ['low', 'medium', 'high', 'critical'];
-  
-  const hazardType = hazardTypes[Math.floor(Math.random() * hazardTypes.length)];
-  const severity = severities[Math.floor(Math.random() * severities.length)];
-  const confidence = Math.round((0.72 + Math.random() * 0.25) * 100) / 100;
-  
-  const descriptions: Record<HazardType, string[]> = {
-    pothole: [
-      'Detected circular depression in road surface approximately 30cm in diameter.',
-      'Identified pothole with visible aggregate exposure indicating structural damage.',
-      'Located road cavity showing signs of water erosion and traffic wear.',
+// Road damage keyword mappings for intelligent analysis
+const hazardKeywordMap: { type: HazardType; keywords: string[]; severityHints: { keyword: string; severity: Severity }[] }[] = [
+  {
+    type: 'pothole',
+    keywords: ['pothole', 'pot hole', 'hole in road', 'road hole', 'cavity', 'depression in road', 'dip in road'],
+    severityHints: [
+      { keyword: 'deep', severity: 'high' }, { keyword: 'large', severity: 'high' },
+      { keyword: 'huge', severity: 'critical' }, { keyword: 'dangerous', severity: 'critical' },
+      { keyword: 'small', severity: 'low' }, { keyword: 'minor', severity: 'low' },
     ],
-    crack: [
-      'Linear crack pattern detected extending approximately 2 meters.',
-      'Identified alligator cracking pattern suggesting base layer failure.',
-      'Surface crack with width indicating potential structural concern.',
+  },
+  {
+    type: 'crack',
+    keywords: ['crack', 'cracked', 'cracking', 'fracture', 'split', 'alligator', 'fissure', 'broken pavement', 'pavement damage'],
+    severityHints: [
+      { keyword: 'long', severity: 'high' }, { keyword: 'wide', severity: 'high' },
+      { keyword: 'spreading', severity: 'critical' }, { keyword: 'small', severity: 'low' },
     ],
-    flooding: [
-      'Pooling water detected indicating drainage system blockage.',
-      'Identified flood-prone area with inadequate surface drainage.',
-      'Water accumulation suggesting compromised road camber.',
+  },
+  {
+    type: 'flooding',
+    keywords: ['flood', 'flooding', 'waterlog', 'water logging', 'waterlogging', 'standing water', 'pooling', 'submerged', 'drain', 'blocked drain', 'water accumulation'],
+    severityHints: [
+      { keyword: 'deep', severity: 'critical' }, { keyword: 'rising', severity: 'critical' },
+      { keyword: 'shallow', severity: 'low' }, { keyword: 'minor', severity: 'low' },
     ],
-    debris: [
-      'Foreign material detected obstructing traffic lane.',
-      'Identified scattered debris requiring immediate clearance.',
-      'Construction materials detected on roadway surface.',
+  },
+  {
+    type: 'debris',
+    keywords: ['debris', 'rubble', 'obstruction', 'fallen', 'gravel', 'scattered', 'construction material', 'rocks on road', 'litter', 'oil spill'],
+    severityHints: [
+      { keyword: 'blocking', severity: 'high' }, { keyword: 'hazardous', severity: 'critical' },
+      { keyword: 'small', severity: 'low' },
     ],
-    damaged_signage: [
-      'Traffic sign showing structural damage affecting visibility.',
-      'Identified bent signpost requiring replacement.',
-      'Road marking fading detected below visibility standards.',
+  },
+  {
+    type: 'damaged_signage',
+    keywords: ['sign', 'signage', 'signboard', 'traffic sign', 'stop sign', 'bent sign', 'missing sign', 'faded marking', 'road marking', 'visibility'],
+    severityHints: [
+      { keyword: 'missing', severity: 'high' }, { keyword: 'bent', severity: 'medium' },
+      { keyword: 'faded', severity: 'low' },
     ],
-    broken_barrier: [
-      'Guardrail section showing impact damage.',
-      'Identified barrier discontinuity creating safety gap.',
-      'Concrete barrier showing structural cracks.',
+  },
+  {
+    type: 'broken_barrier',
+    keywords: ['barrier', 'guardrail', 'guard rail', 'railing', 'fence', 'divider', 'median', 'broken barrier', 'damaged barrier'],
+    severityHints: [
+      { keyword: 'missing', severity: 'critical' }, { keyword: 'gap', severity: 'critical' },
+      { keyword: 'bent', severity: 'medium' }, { keyword: 'cracked', severity: 'medium' },
     ],
-    uneven_surface: [
-      'Surface irregularity detected creating vehicle hazard.',
-      'Identified settlement causing uneven road level.',
-      'Pavement heave detected likely from subsurface issues.',
+  },
+  {
+    type: 'uneven_surface',
+    keywords: ['uneven', 'bumpy', 'bump', 'raised', 'settlement', 'heave', 'rough surface', 'speed bump damage', 'rebar', 'exposed rebar'],
+    severityHints: [
+      { keyword: 'rebar', severity: 'critical' }, { keyword: 'exposed', severity: 'critical' },
+      { keyword: 'slight', severity: 'low' },
     ],
-    erosion: [
-      'Edge erosion detected compromising road shoulder.',
-      'Identified washout area affecting road stability.',
-      'Surface material loss from water flow damage.',
+  },
+  {
+    type: 'erosion',
+    keywords: ['erosion', 'eroded', 'washout', 'wash out', 'edge damage', 'shoulder damage', 'sinkhole', 'subsidence', 'cave in', 'collapse', 'landslide'],
+    severityHints: [
+      { keyword: 'sinkhole', severity: 'critical' }, { keyword: 'collapse', severity: 'critical' },
+      { keyword: 'minor', severity: 'low' },
     ],
-  };
+  },
+];
 
-  const priorityMap: Record<Severity, number> = {
-    critical: 1,
-    high: 2,
-    medium: 3,
-    low: 4,
-  };
+const roadRelatedTerms = [
+  'road', 'street', 'highway', 'lane', 'pavement', 'asphalt', 'tar', 'bridge', 'flyover',
+  'underpass', 'overpass', 'intersection', 'junction', 'footpath', 'sidewalk', 'curb',
+  'kerb', 'median', 'divider', 'culvert', 'manhole', 'gutter', 'drain', 'crossing',
+  'traffic', 'vehicle', 'driving', 'ride', 'commute', 'pedestrian', 'walkway',
+  ...hazardKeywordMap.flatMap(h => h.keywords),
+];
+
+const aiDescriptions: Record<HazardType, string[]> = {
+  pothole: [
+    'Detected circular depression in road surface. Risk: vehicle damage, tire blowout, loss of control.',
+    'Road cavity identified with visible aggregate exposure. Risk: axle damage, cyclist accidents.',
+    'Pothole detected showing signs of water erosion and traffic wear. Recommended: patching and resurfacing.',
+  ],
+  crack: [
+    'Linear crack pattern detected. Risk: water infiltration leading to further structural degradation.',
+    'Alligator cracking pattern identified suggesting base layer failure. Recommended: full-depth repair.',
+    'Surface crack with widening trend. Risk: accelerated deterioration if untreated.',
+  ],
+  flooding: [
+    'Water accumulation detected indicating drainage system failure. Risk: hydroplaning, vehicle stalling.',
+    'Flood-prone area with inadequate surface drainage. Risk: pedestrian hazard, infrastructure damage.',
+    'Standing water compromising road surface integrity. Recommended: immediate drainage clearance.',
+  ],
+  debris: [
+    'Foreign material detected obstructing traffic lane. Risk: tire puncture, collision avoidance swerving.',
+    'Scattered debris creating multi-lane hazard. Recommended: immediate clearance operation.',
+    'Construction materials on roadway. Risk: motorcyclist and cyclist accidents.',
+  ],
+  damaged_signage: [
+    'Traffic sign showing structural damage affecting visibility. Risk: driver confusion, intersection accidents.',
+    'Road marking below visibility standards. Risk: lane departure, wrong-way driving.',
+    'Missing or damaged regulatory sign. Recommended: immediate replacement for traffic safety.',
+  ],
+  broken_barrier: [
+    'Guardrail discontinuity creating safety gap. Risk: vehicles leaving roadway at curves.',
+    'Barrier impact damage detected. Risk: reduced crash protection for subsequent incidents.',
+    'Structural barrier failure. Recommended: emergency temporary barriers pending permanent repair.',
+  ],
+  uneven_surface: [
+    'Surface irregularity detected creating vehicle hazard. Risk: suspension damage, loss of control.',
+    'Pavement heave from subsurface issues. Risk: motorcycle accidents, pedestrian tripping.',
+    'Exposed rebar or reinforcement detected. Risk: severe tire damage, pedestrian injury.',
+  ],
+  erosion: [
+    'Edge erosion compromising road shoulder. Risk: vehicles slipping off road edge.',
+    'Washout area affecting road stability. Risk: road collapse under heavy vehicle load.',
+    'Subsidence detected suggesting underground void. Recommended: immediate investigation and barricading.',
+  ],
+};
+
+// AI Analysis Generator - context-aware based on title and description
+export function generateAIAnalysis(title?: string, description?: string): AIAnalysis {
+  const input = `${title || ''} ${description || ''}`.toLowerCase();
+
+  // Check if input is related to road damage
+  const isRoadRelated = roadRelatedTerms.some(term => input.includes(term));
+
+  if (!isRoadRelated) {
+    return {
+      hazardType: 'debris',
+      severity: 'low',
+      confidence: 0,
+      description: 'Fake image: Not representing any road damage or hazard.',
+      suggestedPriority: 4,
+    };
+  }
+
+  // Find best matching hazard type
+  let bestMatch: { type: HazardType; score: number } = { type: 'pothole', score: 0 };
+  for (const mapping of hazardKeywordMap) {
+    let score = 0;
+    for (const kw of mapping.keywords) {
+      if (input.includes(kw)) score += kw.split(' ').length; // multi-word matches score higher
+    }
+    if (score > bestMatch.score) {
+      bestMatch = { type: mapping.type, score };
+    }
+  }
+
+  const hazardType = bestMatch.type;
+
+  // Determine severity from context hints
+  const mapping = hazardKeywordMap.find(m => m.type === hazardType)!;
+  let severity: Severity = 'medium'; // default
+  for (const hint of mapping.severityHints) {
+    if (input.includes(hint.keyword)) {
+      severity = hint.severity;
+      break;
+    }
+  }
+
+  // Boost severity for urgency words
+  const urgencyWords = ['urgent', 'emergency', 'immediately', 'dangerous', 'fatal', 'accident', 'injury', 'life threatening'];
+  if (urgencyWords.some(w => input.includes(w))) {
+    severity = severity === 'low' ? 'medium' : severity === 'medium' ? 'high' : 'critical';
+  }
+
+  const confidence = bestMatch.score > 0
+    ? Math.min(0.98, Math.round((0.78 + bestMatch.score * 0.04 + Math.random() * 0.08) * 100) / 100)
+    : Math.round((0.55 + Math.random() * 0.15) * 100) / 100;
+
+  const priorityMap: Record<Severity, number> = { critical: 1, high: 2, medium: 3, low: 4 };
+
+  const descs = aiDescriptions[hazardType];
 
   return {
     hazardType,
     severity,
     confidence,
-    description: descriptions[hazardType][Math.floor(Math.random() * descriptions[hazardType].length)],
+    description: descs[Math.floor(Math.random() * descs.length)],
     suggestedPriority: priorityMap[severity],
   };
 }
