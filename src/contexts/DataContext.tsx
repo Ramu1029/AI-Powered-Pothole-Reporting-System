@@ -166,7 +166,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [authUser, fetchReports]);
 
   const addReport = useCallback(async (reportData: Omit<HazardReport, 'id' | 'createdAt' | 'updatedAt' | 'aiAnalysis' | 'remarks' | 'status'>) => {
-    const ai = generateAIAnalysis();
+    const ai = generateAIAnalysis(reportData.title, reportData.description);
     
     const { data, error } = await supabase
       .from('hazard_reports' as any)
