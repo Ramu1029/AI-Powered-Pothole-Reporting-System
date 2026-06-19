@@ -1,0 +1,29 @@
+name: Supabase Keep Alive
+
+on:
+
+  schedule:
+
+    # every 12 hours
+
+    - cron: "0 */12 * * *"
+
+  workflow_dispatch:
+
+jobs:
+
+  ping:
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 5
+
+    steps:
+
+      - name: Call Supabase keep-alive endpoint
+
+        run: |
+
+          curl --fail --silent --show-error \
+
+            "https://tywjryamilrixwdtvqcb.supabase.co/functions/v1/keep-alive"
