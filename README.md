@@ -121,8 +121,3 @@ Deployment notes:
 - Improve mobile layouts and offline report caching
 - Add finer-grained auditing and workflow history
 
-## License
-
-This repository does not currently include a license file. Add a `LICENSE` if you want to specify usage and contribution terms.
-
-
